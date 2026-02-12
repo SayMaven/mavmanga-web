@@ -1,65 +1,90 @@
-import Image from "next/image";
+// src/app/page.tsx
+import { 
+  getPopularNew, 
+  getLatestChapters, 
+  getRecommended, 
+  getSeasonal, 
+  getRecentlyAdded 
+} from "@/services/mangadex";
+import Link from "next/link";
+import SearchInput from "@/components/SearchInput";
 
-export default function Home() {
+import HeroCarousel from "@/components/HeroCarousel";
+import LatestUpdateCard from "@/components/LatestUpdateCard";
+import MangaSection from "@/components/MangaSection"; 
+
+export default async function Home() {
+  const [popular, latestChapters, recommended, seasonal, recent] = await Promise.all([
+    getPopularNew(),
+    getLatestChapters(),
+    getRecommended(),
+    getSeasonal(),
+    getRecentlyAdded()
+  ]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen bg-[#121212] text-white font-sans pb-24">
+
+      {/* 1. HERO CAROUSEL */}
+      <div className="w-full mb-14">
+          <HeroCarousel mangaList={popular || []} />
+      </div>
+
+      <div className="container mx-auto px-4 md:px-8 max-w-[1600px] space-y-16">
+        
+        {/* 2. LATEST UPDATES */}
+        <section>
+            <div className="flex items-center justify-between mb-6 px-1">
+                <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                   Latest Updates
+                </h2>
+                {/* LINK AKTIF UNTUK LATEST UPDATES */}
+                <Link 
+                    href="/manga/latest"
+                    className="flex items-center gap-2 text-base text-gray-400 hover:text-white transition font-medium group"
+                >
+                    View All 
+                    <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
+            </div>
+            <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-4 gap-5">
+                {(latestChapters || []).map((chapter: any) => (
+                    // 2. Wrapper PENTING agar kartu tidak terpotong antar kolom
+                    <div key={chapter.id} className="break-inside-avoid mb-5">
+                        <LatestUpdateCard chapter={chapter} />
+                    </div>
+                ))}
+            </div>
+        </section>
+
+        {/* 3. RECOMMENDED */}
+        <MangaSection 
+            title="Recommended" 
+            icon="" 
+            data={recommended || []} 
+            cardWidth="w-[180px] md:w-[250px]" 
+            viewAllHref="/search?sortBy=rating_high" // Link ke Top Rating
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        {/* 4. SEASONAL */}
+        <MangaSection 
+            title="Seasonal: Winter 2026" 
+            icon="" 
+            data={seasonal || []} 
+            cardWidth="w-[150px] md:w-[200px]"
+            viewAllHref="/search?sortBy=latest" // Link ke Most Follows
+        />
+
+        {/* 5. RECENTLY ADDED */}
+        <MangaSection 
+            title="Recently Added" 
+            icon="" 
+            data={recent || []} 
+            cardWidth="w-[120px] md:w-[150px]"
+            viewAllHref="/search?sortBy=created_new" // Link ke Newest Created
+        />
+
+      </div>
+    </main>
   );
 }
