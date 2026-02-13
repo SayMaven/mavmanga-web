@@ -313,7 +313,7 @@ export default function ChapterList({
                                                             </button>
 
                                                             <span className="font-bold text-white text-base">{isNaN(parseFloat(chapNum)) ? chapNum : `Chapter ${chapNum}`}</span>
-                                                            {versions[0]?.attributes?.title && <span className="hidden sm:inline-block text-gray-400 text-sm truncate font-normal">- {versions[0].attributes.title}</span>}
+                                                            {/*{versions[0]?.attributes?.title && <span className="hidden sm:inline-block text-emerald-400 text-sm truncate font-normal">- {versions[0].attributes.title}</span>}*/}
                                                         </div>
 
                                                         <div className="flex items-center gap-3">

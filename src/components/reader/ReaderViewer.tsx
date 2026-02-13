@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+// 1. Tambahkan useSearchParams
+import { useRouter, useSearchParams } from "next/navigation";
 import ReaderHeader from "./ReaderHeader";
 import ReaderSidebar from "./ReaderSidebar"; 
 import ReaderSettingsModal from "./ReaderSettingsModal";
@@ -33,22 +34,20 @@ export default function ReaderViewer({
     uploaderName = "User"
 }: ReaderViewerProps) {
     const router = useRouter();
+    const searchParams = useSearchParams(); // Hook untuk baca URL
     const isMobile = useMediaQuery('(max-width: 768px)');
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showUI, setShowUI] = useState(false); 
     const [showSidebar, setShowSidebar] = useState(false);
     
-    // Simpan rasio gambar untuk deteksi Landscape
     const [imageRatios, setImageRatios] = useState<{[key: number]: number}>({});
 
-    // --- DEFAULT CONFIG (Cleaned Up) ---
     const defaultConfig: ReaderConfig = {
         pageStyle: 'single',
         readingDirection: 'rtl',
         headerVisible: true,
         progressBarStyle: 'normal',
-        // progressBarPosition DIHAPUS agar tidak error
         cursorHint: 'none',
         fitMode: 'height',
         imageSizing: {
@@ -72,11 +71,27 @@ export default function ReaderViewer({
     
     const isNavigatingRef = useRef(false);
 
+    // --- LOGIC POSISI AWAL (LAST PAGE DETECTION) ---
+    // Cek apakah URL memiliki ?pos=last saat pertama kali load chapter baru
+    useEffect(() => {
+        const pos = searchParams.get('pos');
+        if (pos === 'last' && images.length > 0) {
+            // Set ke halaman terakhir
+            setCurrentIndex(images.length - 1);
+            
+            // Hapus query param agar jika di-refresh tidak stuck di bawah (opsional)
+            // router.replace(`/read/${currentChapterId}`, { scroll: false });
+        } else {
+            // Default ke 0 jika tidak ada request last page
+            setCurrentIndex(0);
+        }
+    }, [currentChapterId, images.length, searchParams]); // Dependency penting: trigger saat chapter berubah
+
+
     // --- LOCAL STORAGE ---
     useEffect(() => {
         const savedConfig = localStorage.getItem('maven_reader_config');
         const savedSidebar = localStorage.getItem('maven_reader_sidebar');
-        
         if (savedConfig) {
             try {
                 const parsed = JSON.parse(savedConfig);
@@ -108,7 +123,6 @@ export default function ReaderViewer({
         if (activePageStyle === 'double') {
             const currentRatio = imageRatios[currentIndex] || 0;
             const nextRatio = imageRatios[currentIndex + 1] || 0;
-            // Smart landscape detection
             if (currentRatio > 1.2) return 1;
             if (nextRatio > 1.2) return 1;
             return 2;
@@ -118,10 +132,11 @@ export default function ReaderViewer({
     }, [activePageStyle, currentIndex, imageRatios]);
 
 
-    // --- DATA & NAV LOGIC ---
+    // --- NAVIGATION LOGIC ---
     const currentChapNum = currentChapter?.chapter || '?';
     const currentLang = currentChapter?.translatedLanguage || 'en';
     
+    // 1. Logic Chapter Selanjutnya
     const findNextChapter = useCallback(() => {
         const sameLangChapters = chapterList.filter((ch: any) => ch.attributes.translatedLanguage === currentLang);
         sameLangChapters.sort((a: any, b: any) => parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter));
@@ -140,6 +155,25 @@ export default function ReaderViewer({
         } else { router.push(`/manga/${mangaId}`); }
     }, [chapterList, currentLang, currentChapterId, currentChapNum, router, mangaId]);
 
+    // 2. Logic Chapter Sebelumnya (BARU)
+    const findPrevChapter = useCallback(() => {
+        const sameLangChapters = chapterList.filter((ch: any) => ch.attributes.translatedLanguage === currentLang);
+        // Sort Ascending (sama dengan findNextChapter agar urutannya konsisten)
+        sameLangChapters.sort((a: any, b: any) => parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter));
+        
+        const currentIndexInList = sameLangChapters.findIndex((ch: any) => ch.id === currentChapterId);
+
+        if (currentIndexInList > 0) {
+            const prevChap = sameLangChapters[currentIndexInList - 1];
+            // Tambahkan ?pos=last agar di chapter sebelumnya langsung ke halaman terakhir
+            router.push(`/read/${prevChap.id}?pos=last`);
+        } else {
+            // Sudah di chapter pertama, kembali ke halaman manga
+            router.push(`/manga/${mangaId}`);
+        }
+    }, [chapterList, currentLang, currentChapterId, router, mangaId]);
+
+
     const goToNextPage = useCallback(() => {
         if (activePageStyle === 'long-strip') return; 
         if (currentIndex < images.length - 1) {
@@ -148,19 +182,25 @@ export default function ReaderViewer({
             setShowUI(false); 
             if (readerConfig.fitMode === 'width') window.scrollTo({ top: 0 }); 
             setTimeout(() => { isNavigatingRef.current = false; }, 300);
-        } else { findNextChapter(); }
+        } else { 
+            findNextChapter(); 
+        }
     }, [currentIndex, images.length, readerConfig.fitMode, findNextChapter, activePageStyle, imagesPerPage]);
 
     const goToPrevPage = useCallback(() => {
         if (activePageStyle === 'long-strip') return;
+        
         if (currentIndex > 0) {
             isNavigatingRef.current = true;
-            setCurrentIndex(prev => Math.max(prev - 1, 0));
+            setCurrentIndex(prev => Math.max(prev - 1, 0)); // Mundur 1-1 agar aman
             setShowUI(false);
             if (readerConfig.fitMode === 'width') window.scrollTo({ top: 0 });
             setTimeout(() => { isNavigatingRef.current = false; }, 300);
+        } else {
+            // FIX: Panggil logic chapter sebelumnya jika sudah di halaman 0
+            findPrevChapter();
         }
-    }, [currentIndex, readerConfig.fitMode, activePageStyle]);
+    }, [currentIndex, readerConfig.fitMode, activePageStyle, findPrevChapter]);
 
     const handleJumpToPage = useCallback((index: number) => {
         isNavigatingRef.current = true;
@@ -170,27 +210,20 @@ export default function ReaderViewer({
         setTimeout(() => { isNavigatingRef.current = false; }, 300);
     }, [readerConfig.fitMode, images.length]);
 
-    // --- FIX SCROLL HANDLER (Long Strip & Paged) ---
+    // Scroll Handler
     useEffect(() => {
         const handleWheel = (e: WheelEvent) => {
             if (isNavigatingRef.current || isSettingsOpen) return;
-
-            // Logika Universal:
-            // Scroll Bawah (> 0) -> Hide UI
-            // Scroll Atas (< 0) -> Show UI
-            
-            // Untuk long strip, ini akan bekerja alami saat user scroll konten
-            // Untuk paged mode, ini juga bekerja saat user scroll mouse
-            
+            // Logic Long Strip & Paged sama: Scroll Up -> Show UI, Scroll Down -> Hide UI
             if (e.deltaY > 10 && showUI) {
                 setShowUI(false);
-            } else if (e.deltaY < -10 && !showUI) {
+            } else if (e.deltaY < -20 && !showUI) { // Threshold -20 agar tidak terlalu sensitif
                 setShowUI(true);
             }
         };
         window.addEventListener('wheel', handleWheel);
         return () => window.removeEventListener('wheel', handleWheel);
-    }, [showUI, isSettingsOpen]); // Hapus dependency activePageStyle agar logicnya konsisten
+    }, [showUI, isSettingsOpen]);
 
     // Keyboard Handler
     useEffect(() => {
@@ -214,11 +247,7 @@ export default function ReaderViewer({
 
     const handleZoneClick = (zone: 'left' | 'center' | 'right') => {
         if (isGapModalOpen || isSettingsOpen) return;
-        
-        if (zone === 'center') { 
-            setShowSidebar(prev => !prev); 
-            // Header tidak di-toggle disini sesuai request sebelumnya
-        }
+        if (zone === 'center') { setShowSidebar(prev => !prev); }
         else if (zone === 'left') { 
             if (showSidebar) setShowSidebar(false); 
             else {
@@ -249,15 +278,12 @@ export default function ReaderViewer({
         if (readerConfig.imageSizing.containHeight) style += "h-screen w-auto ";
         else if (readerConfig.imageSizing.containWidth) style += "w-full h-auto ";
         else style += "h-screen w-auto ";
-        
-        // Fix overflow
         if (count === 1) style += "max-w-full ";
         if (count === 2) style += "max-w-[50vw] "; 
         if (count === 3) style += "max-w-[33vw] "; 
         return style;
     };
 
-    // Pastikan long-strip punya scrollbar
     const containerOverflowClass = activePageStyle === 'long-strip' 
         ? 'overflow-y-auto custom-scrollbar' 
         : (readerConfig.imageSizing.containHeight ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar');
@@ -270,7 +296,6 @@ export default function ReaderViewer({
                 <div 
                     className="w-full min-h-full flex flex-col items-center pb-20 pt-16 cursor-pointer"
                     onClick={(e) => {
-                        // Fix: Klik tengah Long Strip membuka Sidebar
                         if (e.detail === 1) handleZoneClick('center');
                     }}
                 >
@@ -281,15 +306,19 @@ export default function ReaderViewer({
                             alt={`Page ${idx + 1}`}
                             className="w-full h-auto max-w-4xl object-contain mb-0.5" 
                             loading="lazy"
-                            // Stop propagation agar scroll tidak terganggu
-                            // tapi biarkan click event naik ke container
                         />
                     ))}
                     <div className="flex flex-col gap-4 mt-8 mb-20 text-center" onClick={(e) => e.stopPropagation()}>
                         <p className="text-gray-400">End of Chapter</p>
-                        <button onClick={findNextChapter} className="px-6 py-3 bg-[#FF6740] text-white rounded font-bold hover:bg-orange-600 transition">
-                            Next Chapter
-                        </button>
+                        <div className="flex gap-4 justify-center">
+                            {/* Tombol Prev Chapter di Long Strip */}
+                            <button onClick={findPrevChapter} className="px-6 py-3 bg-[#3c3e44] text-white rounded font-bold hover:bg-[#4a4d55] transition">
+                                Prev Chapter
+                            </button>
+                            <button onClick={findNextChapter} className="px-6 py-3 bg-[#FF6740] text-white rounded font-bold hover:bg-orange-600 transition">
+                                Next Chapter
+                            </button>
+                        </div>
                     </div>
                 </div>
             ) : (
@@ -315,7 +344,7 @@ export default function ReaderViewer({
                 </div>
             )}
 
-            {/* Click Zones (Paged Only) */}
+            {/* Click Zones */}
             {activePageStyle !== 'long-strip' && (
                 <div className="fixed inset-0 flex z-10">
                     <div className="w-[30%] h-full cursor-pointer" onClick={() => handleZoneClick('left')} title={readerConfig.readingDirection === 'ltr' ? "Previous" : "Next"} />
@@ -376,7 +405,7 @@ export default function ReaderViewer({
                 onNextPage={goToNextPage}
             />
 
-            {/* FIX ERROR: Hapus prop position */}
+            {/* PROGRESS BAR */}
             {readerConfig.progressBarStyle !== 'hidden' && activePageStyle !== 'long-strip' && (
                 <ReaderProgressBar 
                     currentIndex={currentIndex}
