@@ -12,12 +12,18 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
+  // --- LOGIKA SEMBUNYIKAN NAVBAR ---
+  // Jika URL diawali dengan "/read" (halaman baca), jangan tampilkan Navbar.
+  // Pengecekan 'pathname?' memastikan tidak error jika pathname null.
+  if (pathname?.startsWith('/read')) {
+    return null;
+  }
+
   return (
     <nav className="bg-[#191A1C]/95 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 max-w-[1600px] h-16 flex items-center justify-between gap-4">
           
           {/* ================= BAGIAN KIRI: LOGO & NAMA ================= */}
-          {/* LOGIC: Logo disembunyikan HANYA saat search mobile aktif */}
           <Link 
             href="/" 
             className={`flex items-center gap-2 group flex-shrink-0 mr-auto 
@@ -26,15 +32,14 @@ export default function Navbar() {
             <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition flex-shrink-0">
                <div className="w-full h-full rounded-full overflow-hidden relative">
                  <Image
-                    src="https://res.cloudinary.com/ds4a54vuy/image/upload/v1770397534/latest.png"
-                    alt="Logo"
-                    fill
-                    sizes="40px"
-                    className="object-cover"
+                   src="https://res.cloudinary.com/ds4a54vuy/image/upload/v1770397534/latest.png"
+                   alt="Logo"
+                   fill
+                   sizes="40px"
+                   className="object-cover"
                  />
                </div>
             </div>
-            {/* Nama Website: Muncul di Desktop & Mobile (kecuali saat search aktif) */}
             <span className="text-xl md:text-2xl font-bold text-white tracking-tight group-hover:text-orange-400 transition whitespace-nowrap">
                 MavenManga
             </span>
@@ -42,15 +47,11 @@ export default function Navbar() {
 
 
           {/* ================= BAGIAN KANAN (GROUP) ================= */}
-          {/* Container ini membungkus Search + Icons agar mereka menempel di KANAN */}
           <div className={`flex items-center gap-3 md:gap-4 justify-end
               ${isMobileSearchOpen ? 'flex-1 w-full' : 'flex-none'} 
           `}>
 
              {/* 1. SEARCH INPUT */}
-             {/* - Mobile: Hanya muncul jika isMobileSearchOpen = true (Full Width)
-                - Desktop: Selalu muncul (md:block) tapi width normal
-             */}
              <div className={`
                 ${isMobileSearchOpen ? 'flex flex-1 items-center gap-2 animate-in fade-in slide-in-from-right-4' : 'hidden md:block'}
              `}>
@@ -70,7 +71,6 @@ export default function Navbar() {
              </div>
 
              {/* 2. TOMBOL TRIGGER SEARCH (MOBILE ONLY) */}
-             {/* Tombol Kaca Pembesar: Muncul di mobile saat search belum aktif */}
              {!isMobileSearchOpen && (
                  <button 
                     onClick={() => setIsMobileSearchOpen(true)}
@@ -84,7 +84,6 @@ export default function Navbar() {
 
 
              {/* 3. ICON LIBRARY & USER */}
-             {/* Disembunyikan saat Mobile Search Aktif agar input search lega */}
              <div className={`flex items-center gap-3 md:gap-4 ${isMobileSearchOpen ? 'hidden md:flex' : 'flex'}`}>
                 
                 {/* TOMBOL LIBRARY */}
@@ -107,7 +106,7 @@ export default function Navbar() {
                         fill
                         sizes="40px"
                         className="object-cover"
-                     />
+                      />
                 </div>
              </div>
 

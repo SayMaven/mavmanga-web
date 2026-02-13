@@ -352,15 +352,19 @@ export const getMangaDetail = async (id: string) => {
   } catch (e) { return null; }
 };
 
-// src/services/mangadex.ts
 
-// src/services/mangadex.ts
-
-// Tambahkan parameter 'order' (default 'desc')
-export const getMangaFeed = async (id: string, offset: number = 0, order: 'asc' | 'desc' = 'desc') => {
+export const getMangaFeed = async (
+    id: string, 
+    offset: number = 0, 
+    order: 'asc' | 'desc' = 'desc', 
+    limit: number = 100 // Parameter sudah benar
+) => {
   const targetUrl = new URL(`${API_BASE}/manga/${id}/feed`);
   
-  targetUrl.searchParams.append('limit', '100'); 
+  // --- PERBAIKAN DISINI ---
+  // Jangan hardcode '100', tapi gunakan variabel 'limit'
+  targetUrl.searchParams.append('limit', limit.toString()); 
+  
   targetUrl.searchParams.append('offset', offset.toString());
   
   // GUNAKAN PARAMETER ORDER DISINI
