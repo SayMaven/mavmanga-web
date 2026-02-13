@@ -35,3 +35,23 @@ body {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px; /* Lebar scrollbar tipis */
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent; 
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #32353B; /* Warna thumb gelap */
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #52555b; /* Sedikit lebih terang saat hover */
+  }
+}
