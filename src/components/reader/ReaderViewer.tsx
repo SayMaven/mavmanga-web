@@ -87,6 +87,24 @@ export default function ReaderViewer({
         }
     }, [currentChapterId, images.length, searchParams]); // Dependency penting: trigger saat chapter berubah
 
+    useEffect(() => {
+        // Ambil data lama
+        const saved = localStorage.getItem('maven_read_chapters');
+        let readSet = new Set<string>();
+        
+        if (saved) {
+            try { readSet = new Set(JSON.parse(saved)); } catch (e) {}
+        }
+
+        // Tambahkan chapter saat ini jika belum ada
+        if (!readSet.has(currentChapterId)) {
+            readSet.add(currentChapterId);
+            localStorage.setItem('maven_read_chapters', JSON.stringify(Array.from(readSet)));
+            
+            // Trigger event storage manual agar ChapterList tau ada update (jika di tab sebelah)
+            window.dispatchEvent(new Event("storage"));
+        }
+    }, [currentChapterId]);
 
     // --- LOCAL STORAGE ---
     useEffect(() => {

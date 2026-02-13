@@ -1,7 +1,7 @@
 // src/components/manga/ChapterList.tsx
 'use client';
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link"; 
 import { useRouter, usePathname, useSearchParams } from "next/navigation"; 
 import ChapterRow from "./ChapterRow";
@@ -33,14 +33,41 @@ export default function ChapterList({
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isIndexModalOpen, setIsIndexModalOpen] = useState(false);
 
-  // --- LOCAL STORAGE LOGIC ---
-  useEffect(() => {
-    const saved = localStorage.getItem('maven_read_chapters');
-    if (saved) {
-        try { setReadChapters(new Set(JSON.parse(saved))); } 
-        catch (e) { console.error(e); }
-    }
+  // --- LOCAL STORAGE LOGIC (DIPERBARUI) ---
+  
+  // 1. Fungsi untuk sinkronisasi data dari LocalStorage
+  const syncReadStatus = useCallback(() => {
+      const saved = localStorage.getItem('maven_read_chapters');
+      if (saved) {
+          try { 
+              const parsed = JSON.parse(saved);
+              // Bandingkan ukuran set untuk menghindari re-render yang tidak perlu
+              setReadChapters(prev => {
+                  if (prev.size === parsed.length && parsed.every((id: string) => prev.has(id))) {
+                      return prev;
+                  }
+                  return new Set(parsed);
+              });
+          } catch (e) { 
+              console.error("Error parsing read history:", e); 
+          }
+      }
   }, []);
+
+  // 2. Load saat mount DAN saat window mendapat fokus (kembali dari reader)
+  useEffect(() => {
+      syncReadStatus(); // Load awal
+
+      // Event listener agar saat user kembali ke tab/halaman ini, data di-refresh
+      window.addEventListener('focus', syncReadStatus);
+      // Event listener untuk sinkronisasi antar tab
+      window.addEventListener('storage', syncReadStatus);
+
+      return () => {
+          window.removeEventListener('focus', syncReadStatus);
+          window.removeEventListener('storage', syncReadStatus);
+      };
+  }, [syncReadStatus]);
 
   const saveReadStatus = (newSet: Set<string>) => {
       setReadChapters(newSet);
@@ -284,7 +311,6 @@ export default function ChapterList({
                                                 const lang = v.attributes.translatedLanguage;
                                                 langCounts[lang] = (langCounts[lang] || 0) + 1;
                                             });
-                                            // Array summary untuk dirender
                                             const langSummary = Object.entries(langCounts);
                                             // ---------------------------------------
 
@@ -313,7 +339,6 @@ export default function ChapterList({
                                                             </button>
 
                                                             <span className="font-bold text-white text-base">{isNaN(parseFloat(chapNum)) ? chapNum : `Chapter ${chapNum}`}</span>
-                                                            {/*{versions[0]?.attributes?.title && <span className="hidden sm:inline-block text-emerald-400 text-sm truncate font-normal">- {versions[0].attributes.title}</span>}*/}
                                                         </div>
 
                                                         <div className="flex items-center gap-3">
@@ -329,7 +354,6 @@ export default function ChapterList({
                                                                                 className="w-full h-full object-cover rounded-[1px] opacity-80" 
                                                                             />
                                                                         </div>
-                                                                        {/* INDIKATOR ANGKA (COUNTER) */}
                                                                         <span className="text-[10px] font-bold text-white">{count}</span>
                                                                     </div>
                                                                 ))}
@@ -343,7 +367,6 @@ export default function ChapterList({
                                                     <div 
                                                         className={`grid transition-[grid-template-rows] duration-300 ease-out ${!isChCollapsed ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                                                     >
-                                                        {/* GARIS PEMISAH DIHILANGKAN (BORDER-T DIBUANG) */}
                                                         <div className="overflow-hidden min-h-0 bg-[#191a1c]">
                                                             {versions.map((chap: any) => (
                                                                 <ChapterRow 
