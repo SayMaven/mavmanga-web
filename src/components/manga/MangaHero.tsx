@@ -102,7 +102,7 @@ export default function MangaHero({
         <div className="absolute inset-0 h-[500px] overflow-hidden z-0">
            <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/80 to-[#121212]/40 z-10" />
            {/* eslint-disable-next-line @next/next/no-img-element */}
-           <img src={coverUrl} className="w-full h-full object-cover object-[50%_25%] opacity-50 blur-[4px]" alt="Banner" />
+           <img src={coverUrl} referrerPolicy="no-referrer" className="w-full h-full object-cover object-[50%_25%] opacity-50 blur-[4px]" alt="Banner" />
         </div>
 
         <div className="relative z-20 container mx-auto px-4 md:px-6 pt-10">

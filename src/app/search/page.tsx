@@ -1,6 +1,7 @@
 // src/app/search/page.tsx
 import { searchManga } from "@/services/mangadex";
 import SearchContent from "@/components/SearchContent";
+import { Metadata } from "next";
 
 // 1. Tambahkan definisi tipe untuk parameter baru
 type SearchParams = Promise<{ 
@@ -21,6 +22,11 @@ type SearchParams = Promise<{
   excludedTagsMode?: string;
   availableTranslatedLanguage?: string; // <--- TAMBAHAN PENTING
 }>;
+
+export const metadata: Metadata = {
+  title: "Search", 
+  // Hasil di Browser Tab nanti otomatis menjadi: "Pencarian Manga | SayMaven"
+};
 
 export default async function SearchPage(props: { searchParams: SearchParams }) {
   const params = await props.searchParams;

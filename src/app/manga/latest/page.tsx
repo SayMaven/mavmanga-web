@@ -3,9 +3,15 @@ import { getLatestChapters } from "@/services/mangadex";
 import LatestUpdateCard from "@/components/LatestUpdateCard";
 import Pagination from "@/components/Pagination"; 
 import Link from "next/link";
+import { Metadata } from "next";
 import SearchInput from "@/components/SearchInput";
 
 type SearchParams = Promise<{ page?: string }>;
+
+export const metadata: Metadata = {
+  title: "Latest", 
+  // Hasil di Browser Tab nanti otomatis menjadi: "Pencarian Manga | SayMaven"
+};
 
 export default async function LatestUpdatesPage(props: { searchParams: SearchParams }) {
   const params = await props.searchParams;

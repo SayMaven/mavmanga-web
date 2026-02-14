@@ -14,8 +14,33 @@ export default function LibraryButton({ manga }: { manga: any }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown visibility
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Data Manga
-  const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
+  // --- LOGIC JUDUL CERDAS (Updated) ---
+  const getSmartTitle = () => {
+      const attr = manga.attributes;
+      const ogLang = attr.originalLanguage; 
+      const altTitles = attr.altTitles || [];
+
+      const findTitle = (lang: string) => {
+          return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
+      };
+
+      // Fallback title (ambil value pertama dari object title)
+      const fallbackTitle = (typeof attr.title === 'object') ? Object.values(attr.title)[0] as string : attr.title;
+
+      let mainTitle = "";
+
+      if (ogLang === 'ja') {
+          // Jepang: Romaji -> English -> Kanji -> Fallback
+          mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
+      } else {
+          // Luar Jepang: English -> Romaji -> Asli -> Fallback
+          mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
+      }
+      
+      return mainTitle || "Untitled";
+  };
+
+  const title = getSmartTitle(); // Gunakan fungsi ini untuk judul
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
   const coverUrl = coverRel?.attributes?.fileName 
     ? `https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}.256.jpg`
@@ -47,7 +72,7 @@ export default function LibraryButton({ manga }: { manga: any }) {
     };
   }, []);
 
-  // Fungsi Save
+  // Fungsi Save (DIPERBARUI)
   const handleSave = () => {
     const savedData = localStorage.getItem('maven_library');
     let library = savedData ? JSON.parse(savedData) : [];
@@ -59,10 +84,17 @@ export default function LibraryButton({ manga }: { manga: any }) {
     if (tempStatus) {
       library.push({
         id: manga.id,
-        title,
+        title, // Simpan judul yang sudah diproses (Smart Title)
         cover: coverUrl,
         status: tempStatus,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        
+        // Simpan atribut lengkap agar LibraryContent juga bisa memproses ulang jika perlu
+        attributes: {
+            title: manga.attributes.title,
+            altTitles: manga.attributes.altTitles,
+            originalLanguage: manga.attributes.originalLanguage,
+        }
       });
     }
 
@@ -165,23 +197,23 @@ export default function LibraryButton({ manga }: { manga: any }) {
                                 {/* DROPDOWN MENU (Absolute) */}
                                 {isDropdownOpen && (
                                     <div className="absolute top-full left-0 w-full mt-1 bg-[#232529] border border-white/10 rounded shadow-2xl z-50 overflow-hidden">
-                                        {options.map((opt) => (
-                                            <button
-                                                key={opt.label}
-                                                onClick={() => {
-                                                    setTempStatus(opt.value as ReadingStatus);
-                                                    setIsDropdownOpen(false);
-                                                }}
-                                                className={`w-full text-left px-4 py-3 text-sm transition-colors
-                                                    ${tempStatus === opt.value 
-                                                        ? 'bg-[#FF6740] text-white font-bold' // Selected State
-                                                        : 'text-gray-300 hover:bg-white/10' // Normal State
-                                                    }
-                                                `}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
+                                            {options.map((opt) => (
+                                                <button
+                                                    key={opt.label}
+                                                    onClick={() => {
+                                                        setTempStatus(opt.value as ReadingStatus);
+                                                        setIsDropdownOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-3 text-sm transition-colors
+                                                        ${tempStatus === opt.value 
+                                                            ? 'bg-[#FF6740] text-white font-bold' // Selected State
+                                                            : 'text-gray-300 hover:bg-white/10' // Normal State
+                                                        }
+                                                    `}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
                                     </div>
                                 )}
                             </div>

@@ -1,9 +1,10 @@
 // src/app/read/[chapterId]/page.tsx
 
+import { Metadata } from "next";
 import { getChapterPages, getMangaFeed, getMangaDetail } from "@/services/mangadex"; 
 import ReaderViewer from "@/components/reader/ReaderViewer";
 
-// 1. UPDATE FETCH URL: Tambahkan &includes[]=user
+// --- HELPER FETCH METADATA ---
 async function getChapterMetaData(chapterId: string) {
   try {
     const res = await fetch(`https://api.mangadex.org/chapter/${chapterId}?includes[]=manga&includes[]=scanlation_group&includes[]=user`, {
@@ -16,6 +17,59 @@ async function getChapterMetaData(chapterId: string) {
   }
 }
 
+// --- HELPER LOGIC JUDUL (Sama seperti MangaCard/Hero) ---
+function getSmartTitle(manga: any) {
+    if (!manga || !manga.attributes) return "Unknown Title";
+    
+    const attr = manga.attributes;
+    const ogLang = attr.originalLanguage;
+    const altTitles = attr.altTitles || [];
+
+    const findTitle = (lang: string) => {
+        return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
+    };
+
+    const fallbackTitle = Object.values(attr.title)[0] as string || "No Title";
+    let mainTitle = "";
+
+    // 1. JEPANG: Romaji -> Inggris -> Kanji
+    if (ogLang === 'ja') {
+        mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
+    } 
+    // 2. LAINNYA: English -> Romaji -> Asli
+    else {
+        mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
+    }
+
+    return mainTitle;
+}
+
+// --- 1. GENERATE METADATA (JUDUL TAB SERVER SIDE) ---
+export async function generateMetadata({ params }: { params: Promise<{ chapterId: string }> }): Promise<Metadata> {
+    const { chapterId } = await params;
+    const chapter = await getChapterMetaData(chapterId);
+    
+    if (!chapter) return { title: "Reader" };
+
+    const mangaRel = chapter.relationships?.find((r: any) => r.type === 'manga');
+    let mangaTitle = "Manga";
+
+    if (mangaRel?.id) {
+        const manga = await getMangaDetail(mangaRel.id);
+        mangaTitle = getSmartTitle(manga);
+    }
+
+    const chapNum = chapter.attributes?.chapter || "Oneshot";
+    
+    // Format Awal: 1 | Chapter X - Judul | SayMaven
+    // (Next.js otomatis nambahin | SayMaven dari layout, jadi kita return depannya aja)
+    return {
+        title: `1 | Chapter ${chapNum} - ${mangaTitle}`,
+        description: `Read ${mangaTitle} Chapter ${chapNum} online free.`
+    };
+}
+
+// --- 2. MAIN COMPONENT ---
 export default async function ReadPage({ params }: { params: Promise<{ chapterId: string }> }) {
   const { chapterId } = await params;
 
@@ -24,8 +78,8 @@ export default async function ReadPage({ params }: { params: Promise<{ chapterId
     getChapterMetaData(chapterId)
   ]);
 
-  if (!chapterPages || !chapterPages.baseUrl) return <div className="text-white">Error loading pages</div>;
-  if (!chapterMeta) return <div className="text-white">Error loading metadata</div>;
+  if (!chapterPages || !chapterPages.baseUrl) return <div className="text-white text-center pt-20">Error loading pages</div>;
+  if (!chapterMeta) return <div className="text-white text-center pt-20">Error loading metadata</div>;
 
   const { baseUrl, chapter: pagesData } = chapterPages;
   const { hash, data: files } = pagesData;
@@ -34,13 +88,10 @@ export default async function ReadPage({ params }: { params: Promise<{ chapterId
 
   const mangaRel = chapterMeta.relationships?.find((r: any) => r.type === 'manga');
   const groupRel = chapterMeta.relationships?.find((r: any) => r.type === 'scanlation_group');
-  
-  // 2. AMBIL DATA USER DARI RELATIONSHIPS
   const userRel = chapterMeta.relationships?.find((r: any) => r.type === 'user');
   
   const mangaId = mangaRel?.id;
   const groupName = groupRel?.attributes?.name || "No Group";
-  // Ambil username, jika tidak ada pakai default
   const userName = userRel?.attributes?.username || "Unknown User"; 
 
   if (!mangaId) return <div>Manga ID not found</div>;
@@ -50,8 +101,8 @@ export default async function ReadPage({ params }: { params: Promise<{ chapterId
       getMangaFeed(mangaId, 0, 'asc', 500) 
   ]);
 
-  const titles = manga?.attributes?.title || {};
-  const mangaTitle = titles.en || Object.values(titles)[0] || "Unknown Title";
+  // Gunakan Logic Judul Cerdas di sini juga agar konsisten
+  const mangaTitle = getSmartTitle(manga);
 
   return (
     <ReaderViewer 
@@ -60,9 +111,9 @@ export default async function ReadPage({ params }: { params: Promise<{ chapterId
         currentChapterId={chapterMeta.id}       
         chapterList={feed.data} 
         mangaId={mangaId}
-        mangaTitle={mangaTitle as string}
+        mangaTitle={mangaTitle} // Judul yang sudah difilter (Romaji/En)
         scanlationGroup={groupName as string}
-        uploaderName={userName as string} // <--- 3. KIRIM PROPS INI
+        uploaderName={userName as string} 
     />
   );
 }

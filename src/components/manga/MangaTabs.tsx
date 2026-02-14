@@ -78,6 +78,7 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
                         <img 
                             src={`https://uploads.mangadex.org/covers/${mangaId}/${cover.attributes.fileName}.256.jpg`} 
                             alt={cover.attributes.volume || "Cover"}
+                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover transition duration-300 group-hover:scale-110"
                             loading="lazy"
                         />
@@ -114,6 +115,7 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
                             <img 
                                 src={coverImg} 
                                 alt={title as string}
+                                referrerPolicy="no-referrer"
                                 className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                                 loading="lazy"
                             />
