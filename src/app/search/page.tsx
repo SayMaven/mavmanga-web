@@ -1,9 +1,8 @@
 // src/app/search/page.tsx
 import { searchManga } from "@/services/mangadex";
 import SearchContent from "@/components/SearchContent";
-import SearchInput from "@/components/SearchInput";
-import Link from "next/link";
 
+// 1. Tambahkan definisi tipe untuk parameter baru
 type SearchParams = Promise<{ 
   q?: string; 
   status?: string; 
@@ -20,12 +19,14 @@ type SearchParams = Promise<{
   excludedTags?: string;
   includedTagsMode?: string;
   excludedTagsMode?: string;
+  availableTranslatedLanguage?: string; // <--- TAMBAHAN PENTING
 }>;
 
 export default async function SearchPage(props: { searchParams: SearchParams }) {
   const params = await props.searchParams;
   const currentPage = Number(params.page) || 1;
   
+  // 2. Teruskan parameter ke fungsi service searchManga
   const response = await searchManga({
     q: params.q,
     status: params.status,
@@ -41,7 +42,8 @@ export default async function SearchPage(props: { searchParams: SearchParams }) 
     includedTags: params.includedTags,
     excludedTags: params.excludedTags,
     includedTagsMode: params.includedTagsMode,
-    excludedTagsMode: params.excludedTagsMode
+    excludedTagsMode: params.excludedTagsMode,
+    availableTranslatedLanguage: params.availableTranslatedLanguage // <--- PASSING KE SERVICE
   });
 
   const results = response?.data || [];
@@ -49,7 +51,6 @@ export default async function SearchPage(props: { searchParams: SearchParams }) 
 
   return (
     <main className="min-h-screen bg-[#121212] text-white font-sans">
-
       <SearchContent 
          initialResults={results} 
          totalResults={total}

@@ -6,18 +6,54 @@ import LibraryButton from "./LibraryButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-// Helper: Cari Judul
+// Helper: Cari Judul (Revised Logic)
 const getPreferredTitle = (attr: any) => {
+    const ogLang = attr.originalLanguage; // 'ja', 'zh', 'ko', etc.
     const altTitles = attr.altTitles || [];
-    const findAlt = (lang: string) => altTitles.find((t: any) => t[lang])?.[lang];
-    const romaji = attr.title["ja-ro"] || findAlt("ja-ro");
-    const english = attr.title["en"] || findAlt("en");
-    const japanese = attr.title["ja"] || findAlt("ja");
-    const mainTitle = romaji || english || japanese || Object.values(attr.title)[0];
+
+    // Fungsi bantu untuk mencari judul berdasarkan kode bahasa
+    // Prioritas: Cek di attr.title (judul utama di MD), lalu cek di altTitles
+    const findTitle = (lang: string) => {
+        return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
+    };
+
+    // Fallback darurat: Ambil judul apapun yang tersedia di object title
+    const fallbackTitle = Object.values(attr.title)[0] as string;
+
+    let mainTitle = "";
     let subTitle = "";
-    if (mainTitle === romaji) subTitle = english || japanese;
-    else if (mainTitle === english) subTitle = romaji || japanese;
-    else subTitle = english;
+
+    if (ogLang === 'ja') {
+        // --- LOGIC MANGA JEPANG ---
+        // Main: Romaji -> English -> Kanji -> Fallback
+        mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
+        // Sub: Kanji (Jepang Asli)
+        subTitle = findTitle('ja') || "";
+    } else {
+        // --- LOGIC MANGA LUAR JEPANG (Manhwa, Manhua, dll) ---
+        // Main: English -> Romaji (misal ko-ro) -> Bahasa Asli -> Fallback
+        mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
+        // Sub: Bahasa Asli (misal Hangul/Hanzi)
+        subTitle = findTitle(ogLang) || "";
+    }
+
+    // PEMBERSIHAN AKHIR:
+    // Jika Main Title dan Sub Title isinya sama persis, kosongkan sub title
+    // Atau jika Sub Title kosong, coba cari alternatif lain agar tampilan tidak sepi
+    if (!subTitle || mainTitle === subTitle) {
+        // Jika judul utama adalah Inggris, coba tampilkan Romaji sebagai sub
+        if (mainTitle === findTitle('en')) {
+            subTitle = findTitle(`${ogLang}-ro`) || "";
+        } 
+        // Jika judul utama BUKAN Inggris, coba tampilkan Inggris sebagai sub
+        else {
+            subTitle = findTitle('en') || "";
+        }
+        
+        // Cek lagi, kalau masih sama, kosongkan saja
+        if (mainTitle === subTitle) subTitle = "";
+    }
+
     return { mainTitle, subTitle };
 };
 

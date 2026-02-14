@@ -21,10 +21,40 @@ const getFlagUrl = (lang: string) => {
   return `https://flagcdn.com/w40/${countryCode}.png`;
 };
 
+// --- LOGIC PEMILIHAN JUDUL (DIPERBARUI) ---
+const getDisplayTitles = (manga: any) => {
+    const attr = manga.attributes;
+    const ogLang = attr.originalLanguage;
+    const altTitles = attr.altTitles || [];
+
+    // Helper pencari judul
+    const findTitle = (lang: string) => {
+        return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
+    };
+
+    // Fallback Judul (Ambil yang pertama kali ketemu)
+    const fallbackTitle = Object.values(attr.title)[0] as string || "No Title";
+
+    let mainTitle = "";
+    
+    // LOGIC UTAMA
+    if (ogLang === 'ja') {
+        // Manga Jepang: Prioritas Romaji -> Inggris -> Kanji
+        mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
+    } else {
+        // Manga Luar (Manhwa/Manhua/dll): Prioritas Inggris -> Romaji -> Asli
+        mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
+    }
+
+    return mainTitle;
+};
+
 export default function MangaCard({ manga, large = false, className = "" }: { manga: any, large?: boolean, className?: string }) {
   const attr = manga.attributes;
-  const title = attr.title.en || Object.values(attr.title)[0] || "No Title";
   const originalLang = attr.originalLanguage;
+  
+  // GUNAKAN LOGIC BARU DI SINI
+  const title = getDisplayTitles(manga);
   
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
   const fileName = coverRel?.attributes?.fileName;
@@ -85,15 +115,14 @@ export default function MangaCard({ manga, large = false, className = "" }: { ma
         </div>
 
         {/* --- INFO (JUDUL & BENDERA) --- */}
-        {/* Ubah jadi Flex Column agar menumpuk ke bawah secara alami */}
         <div className="absolute bottom-0 left-0 w-full p-3 z-10 bg-gradient-to-t from-black via-black/60 to-transparent pt-10 rounded-b-lg">
             <div className="flex flex-col gap-2">
-                {/* JUDUL: Hapus line-clamp dan padding kanan */}
-                <h3 className="text-white font-bold text-sm leading-tight break-words group-hover:text-orange-400 transition-colors drop-shadow-md">
+                {/* JUDUL */}
+                <h3 className="text-white font-bold text-sm leading-tight break-words group-hover:text-orange-400 transition-colors drop-shadow-md line-clamp-2">
                   {title}
                 </h3>
                 
-                {/* BENDERA: Flex container untuk meratakan ke kanan */}
+                {/* BENDERA */}
                 <div className="flex justify-end">
                     <img 
                         src={getFlagUrl(originalLang)} 

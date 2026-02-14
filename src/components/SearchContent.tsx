@@ -10,7 +10,8 @@ import LanguageFilter from './filters/LanguageFilter';
 import StatusFilter from './filters/StatusFilter';
 import AuthorFilter from './filters/AuthorFilter'; 
 import ArtistFilter from './filters/ArtistFilter';
-import TagFilter from './filters/TagFilter'; // <--- IMPORT PENTING
+import TagFilter from './filters/TagFilter';
+import TranslatedLanguageFilter from './filters/TranslatedLanguageFilter'; // <--- 1. IMPORT BARU
 import Pagination from './Pagination';
 
 export default function SearchContent({ 
@@ -42,12 +43,25 @@ export default function SearchContent({
     return (r && r !== 'any') ? r.split(',') : [];
   });
 
+  // Original Language
   const [lang, setLang] = useState<string[]>(() => {
     const l = searchParams.get('language');
     return (l && l !== 'any') ? l.split(',') : [];
   });
 
-  // AUTHORS & ARTISTS
+  // --- 2. NEW STATES FOR TRANSLATED CHAPTERS ---
+  const [hasTranslatedChapters, setHasTranslatedChapters] = useState(() => {
+      // Default true jika tidak ada params, atau baca dari URL
+      const param = searchParams.get('hasAvailableChapters');
+      return param === 'true' || param === null; // Default enable jika fresh load
+  });
+
+  const [translatedLangs, setTranslatedLangs] = useState<string[]>(() => {
+      const l = searchParams.get('availableTranslatedLanguage');
+      return l ? l.split(',') : [];
+  });
+  // ---------------------------------------------
+
   const [authors, setAuthors] = useState<string[]>(() => {
     const a = searchParams.get('authors'); return (a && a !== '') ? a.split(',') : [];
   });
@@ -57,9 +71,7 @@ export default function SearchContent({
 
   const [demo, setDemo] = useState(searchParams.get('demo') || 'any'); 
   const [year, setYear] = useState(searchParams.get('year') || ""); 
-  const [hasChapters, setHasChapters] = useState(true); 
 
-  // --- NEW TAGS STATES (MANGADEX STYLE) ---
   const [includedTags, setIncludedTags] = useState<string[]>(() => {
     const t = searchParams.get('includedTags'); return t ? t.split(',') : [];
   });
@@ -69,7 +81,6 @@ export default function SearchContent({
   const [incMode, setIncMode] = useState(searchParams.get('includedTagsMode') || 'AND');
   const [excMode, setExcMode] = useState(searchParams.get('excludedTagsMode') || 'OR');
 
-  // Callback untuk update tags dari komponen TagFilter
   const handleTagUpdate = (inc: string[], exc: string[], iMode: string, eMode: string) => {
       setIncludedTags(inc);
       setExcludedTags(exc);
@@ -88,7 +99,17 @@ export default function SearchContent({
     if (authors.length > 0) params.set('authors', authors.join(','));
     if (artists.length > 0) params.set('artists', artists.join(','));
 
-    // TAGS PARAMS
+    // --- 3. PARAMETER TRANSLATED CHAPTERS ---
+    if (hasTranslatedChapters) {
+        params.set('hasAvailableChapters', 'true');
+        if (translatedLangs.length > 0) {
+            params.set('availableTranslatedLanguage', translatedLangs.join(','));
+        }
+    } else {
+        params.set('hasAvailableChapters', 'false');
+    }
+    // ----------------------------------------
+
     if (includedTags.length > 0) params.set('includedTags', includedTags.join(','));
     if (excludedTags.length > 0) params.set('excludedTags', excludedTags.join(','));
     if (incMode !== 'AND') params.set('includedTagsMode', incMode);
@@ -96,7 +117,6 @@ export default function SearchContent({
 
     if (demo !== 'any') params.set('demo', demo);
     if (year) params.set('year', year);
-    if (hasChapters) params.set('hasChapters', 'true');
     
     params.set('page', '1');
     router.push(`/search?${params.toString()}`);
@@ -119,6 +139,7 @@ export default function SearchContent({
 
       {/* SEARCH BAR SECTION */}
       <div className="bg-[#191A1C] p-4 rounded-lg mb-6 border border-white/5">
+        {/* ... (Search input code sama seperti sebelumnya) ... */}
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -171,7 +192,7 @@ export default function SearchContent({
                 </select>
               </div>
 
-              {/* 2. Filter Tags (MANGADEX STYLE) */}
+              {/* 2. Filter Tags */}
               <TagFilter 
                   includedTags={includedTags}
                   excludedTags={excludedTags}
@@ -201,7 +222,7 @@ export default function SearchContent({
               {/* 6. Artists */}
               <ArtistFilter selectedArtists={artists} onChange={setArtists} />
 
-              {/* 7. Language */}
+              {/* 7. Original Language */}
               <LanguageFilter selectedLangs={lang} onChange={setLang} />
 
               {/* 8. Year */}
@@ -213,44 +234,26 @@ export default function SearchContent({
               {/* 9. Status */}
               <StatusFilter selectedStatus={status} onChange={setStatus} />
 
-              {/* 10. Chapters */}
-              <div>
-                 {/* Tambahkan label agar konsisten dengan input lain */}
-                 <label className={labelClass}>Chapter Status</label>
-                 {/* Gunakan div container dengan inputClass agar terlihat sama */}
-                 <div className={`flex items-center ${inputClass}`}>
-                    <label className="flex items-center gap-2 cursor-pointer select-none w-full">
-                        <input 
-                            type="checkbox" 
-                            checked={hasChapters} 
-                            onChange={(e)=>setHasChapters(e.target.checked)} 
-                            // Hapus bg-gray-700 agar tidak tabrakan dengan background container
-                            className="w-4 h-4 accent-orange-500" 
-                        />
-                        <span className="text-sm text-gray-300 truncate">Has Translated Chapters</span>
-                    </label>
-                 </div>
-              </div>
+              {/* 10. TRANSLATED CHAPTERS FILTER (NEW COMPONENT) */}
+              <TranslatedLanguageFilter 
+                  isEnabled={hasTranslatedChapters}
+                  onEnableChange={setHasTranslatedChapters}
+                  selectedLangs={translatedLangs}
+                  onChange={setTranslatedLangs}
+              />
+
             </div>
 
             {/* RESET BUTTON */}
             <div className="flex justify-between items-center border-t border-white/10 pt-4">
                <button 
                 onClick={() => { 
-                    setQuery(""); 
-                    setSortBy("none");
-                    setStatus([]); 
-                    setDemo("any"); 
-                    setRating([]); 
-                    setLang([]); 
-                    setAuthors([]); 
-                    setArtists([]); 
-                    setYear(""); 
-                    // Reset Tags
-                    setIncludedTags([]);
-                    setExcludedTags([]);
-                    setIncMode('AND');
-                    setExcMode('OR');
+                    setQuery(""); setSortBy("none"); setStatus([]); setDemo("any"); 
+                    setRating([]); setLang([]); setAuthors([]); setArtists([]); setYear(""); 
+                    setIncludedTags([]); setExcludedTags([]); setIncMode('AND'); setExcMode('OR');
+                    // Reset Translated
+                    setHasTranslatedChapters(true); 
+                    setTranslatedLangs([]);
                 }} 
                 className="text-sm text-gray-500 hover:text-white px-2"
                >
@@ -265,7 +268,7 @@ export default function SearchContent({
         )}
       </div>
 
-      {/* RESULTS HEADER */}
+      {/* RESULTS HEADER & LIST (Sama seperti sebelumnya) */}
       {initialResults.length > 0 && (
         <div className="flex justify-between items-center mb-6"> 
            <div className="text-gray-400 text-sm">
@@ -278,7 +281,6 @@ export default function SearchContent({
         </div>
       )}
 
-      {/* LIST MANGA */}
       {initialResults.length > 0 ? (
         <>
             <div className={viewMode === 'list' 

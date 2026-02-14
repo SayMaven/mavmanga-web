@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 
-// Helper Bendera (Sama seperti di MangaCard)
+// Helper Bendera
 const getFlagUrl = (lang: string) => {
   const map: Record<string, string> = { 
   'en':'gb','ja':'jp','ko':'kr','zh':'cn','zh-hk':'hk','id':'id','fr':'fr','es':'es','es-la':'mx',
@@ -14,20 +14,48 @@ const getFlagUrl = (lang: string) => {
 
   'tr':'tr','pl':'pl','uk':'ua','cs':'cz','hu':'hu','ro':'ro','bg':'bg','nl':'nl','sv':'se','no':'no',
   'da':'dk','fi':'fi','el':'gr','sr':'rs','hr':'hr','lt':'lt','lv':'lv','et':'ee','sk':'sk','sl':'si',
-  'ca':'es-ct','ka':'ge','az':'az',
+  'ca':'es-ct','ka':'ge','az':'az','ur': 'pk',
 
   'ja-ro':'jp','ko-ro':'kr','zh-ro':'cn','la':'va','eo':'un'
   };
   const countryCode = map[lang] || 'xx'; 
-  return `https://flagcdn.com/w20/${countryCode}.png`;
+  return `https://flagcdn.com/w40/${countryCode}.png`;
+};
+
+// --- LOGIC JUDUL BARU (SMART TITLE) ---
+const getDisplayTitles = (manga: any) => {
+    const attr = manga.attributes;
+    const ogLang = attr.originalLanguage;
+    const altTitles = attr.altTitles || [];
+
+    const findTitle = (lang: string) => {
+        return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
+    };
+
+    const fallbackTitle = Object.values(attr.title)[0] as string || "No Title";
+    let mainTitle = "";
+
+    // 1. JEPANG: Romaji -> English -> Kanji
+    if (ogLang === 'ja') {
+        mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
+    } 
+    // 2. LAINNYA: English -> Romaji -> Asli
+    else {
+        mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
+    }
+
+    return mainTitle;
 };
 
 export default function SearchCard({ manga }: { manga: any }) {
   const attr = manga.attributes;
-  const title = attr.title.en || Object.values(attr.title)[0] || "No Title";
+  
+  // GUNAKAN LOGIC JUDUL BARU
+  const title = getDisplayTitles(manga);
+  
   const description = attr.description?.en || attr.description?.id || "No description available.";
   const status = attr.status;
-  const originalLang = attr.originalLanguage; // Ambil bahasa asli
+  const originalLang = attr.originalLanguage; 
   
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
   const fileName = coverRel?.attributes?.fileName;
@@ -49,7 +77,7 @@ export default function SearchCard({ manga }: { manga: any }) {
           className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
         />
         
-        {/* --- TAMBAHAN: Bendera di Pojok Kanan Bawah --- */}
+        {/* BENDERA */}
         <div className="absolute bottom-0 right-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent w-full flex justify-end">
              <img 
                src={getFlagUrl(originalLang)} 
@@ -63,7 +91,8 @@ export default function SearchCard({ manga }: { manga: any }) {
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-1 mb-2">
           <Link href={`/manga/${manga.id}`}>
-            <h3 className="text-white font-bold text-lg md:text-xl line-clamp-1 group-hover:text-orange-500 transition">
+            {/* Judul dengan Logic Baru */}
+            <h3 className="text-white font-bold text-lg md:text-xl line-clamp-1 group-hover:text-orange-500 transition" title={title}>
               {title}
             </h3>
           </Link>

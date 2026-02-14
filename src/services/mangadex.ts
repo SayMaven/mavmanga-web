@@ -155,7 +155,8 @@ export const searchManga = async (params: {
   includedTags?: string,
   excludedTags?: string,
   includedTagsMode?: string,
-  excludedTagsMode?: string
+  excludedTagsMode?: string,
+  availableTranslatedLanguage?: string
 }) => {
   
   // Pagination Logic
@@ -237,6 +238,10 @@ export const searchManga = async (params: {
 
   if (params.language && params.language !== 'any' && params.language !== '') {
     queryParams['originalLanguage[]'] = params.language.split(',');
+  }
+
+  if (params.availableTranslatedLanguage && params.availableTranslatedLanguage !== '') {
+    queryParams['availableTranslatedLanguage[]'] = params.availableTranslatedLanguage.split(',');
   }
 
   if (params.year) queryParams['year'] = params.year;
