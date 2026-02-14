@@ -7,11 +7,10 @@ import {
   getRecentlyAdded 
 } from "@/services/mangadex";
 import Link from "next/link";
-import SearchInput from "@/components/SearchInput";
-
 import HeroCarousel from "@/components/HeroCarousel";
 import LatestUpdateCard from "@/components/LatestUpdateCard";
 import MangaSection from "@/components/MangaSection"; 
+import ContentWarning from "@/components/ContentWarning";
 
 export default async function Home() {
   const [popular, latestChapters, recommended, seasonal, recent] = await Promise.all([
@@ -24,6 +23,9 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-[#121212] text-white font-sans pb-24">
+      
+      {/* 2. PASANG KOMPONEN DISINI (Akan muncul di atas segalanya) */}
+      <ContentWarning />
 
       {/* 1. HERO CAROUSEL */}
       <div className="w-full mb-14">

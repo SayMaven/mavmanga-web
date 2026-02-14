@@ -46,28 +46,7 @@ export default function ImageFitSettings({ config, updateImageSizing }: ImageFit
                     </label>
                 </div>
 
-                <div className="w-full h-[1px] bg-[#32353B] my-4"></div>
-
-                <div className="space-y-2">
-                     <label className="flex items-center gap-3 cursor-pointer group">
-                        <input 
-                            type="checkbox" 
-                            checked={config.imageSizing.maxWidth} 
-                            onChange={(e) => updateImageSizing('maxWidth', e.target.checked)}
-                            className="w-5 h-5 bg-transparent border-2 border-gray-500 rounded text-[#FF6740] focus:ring-0 checked:bg-[#FF6740] checked:border-transparent transition" 
-                        />
-                        <span className="text-gray-500 text-sm group-hover:text-gray-300 transition">Limit max width</span>
-                    </label>
-                     <label className="flex items-center gap-3 cursor-pointer group">
-                        <input 
-                            type="checkbox" 
-                            checked={config.imageSizing.maxHeight} 
-                            onChange={(e) => updateImageSizing('maxHeight', e.target.checked)}
-                            className="w-5 h-5 bg-transparent border-2 border-gray-500 rounded text-[#FF6740] focus:ring-0 checked:bg-[#FF6740] checked:border-transparent transition" 
-                        />
-                        <span className="text-gray-500 text-sm group-hover:text-gray-300 transition">Limit max height</span>
-                    </label>
-                </div>
+                
             </div>
         </div>
     );

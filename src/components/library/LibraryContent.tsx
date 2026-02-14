@@ -179,14 +179,14 @@ export default function LibraryContent() {
                 })}
             </div>
         ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center opacity-50 border-2 border-dashed border-white/10 rounded-xl">
+            <div className="flex flex-col items-center justify-center py-50 text-center">
                 <span className="text-5xl mb-4 grayscale">📂</span>
                 <h2 className="text-xl font-bold text-white">No manga in "{activeTab.replace('_', ' ')}"</h2>
                 <p className="text-gray-400 mt-2 text-sm">
                     {activeTab === 'all' ? "Start adding manga to your library!" : "Try changing the status filter."}
                 </p>
                 {activeTab === 'all' && (
-                    <Link href="/" className="mt-6 px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded transition">
+                    <Link href="/search?q=" className="mt-6 px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded transition">
                         Browse Manga
                     </Link>
                 )}

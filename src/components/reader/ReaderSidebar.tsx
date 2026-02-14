@@ -103,19 +103,23 @@ export default function ReaderSidebar({
 
     const handleScrollPropagation = (e: React.WheelEvent) => e.stopPropagation();
 
-    // Helper: Toggle Fit Mode
+    // --- FIX: TOGGLE FIT MODE LOGIC ---
     const toggleFit = () => {
+        // If currently Height mode -> switch to Width
+        // If currently Width mode (or anything else) -> switch to Height
+        const isHeightMode = config.imageSizing.containHeight;
+        
         setConfig({
             ...config,
+            fitMode: isHeightMode ? 'width' : 'height', // Also update the main mode string if you use it
             imageSizing: {
                 ...config.imageSizing,
-                containHeight: !config.imageSizing.containHeight,
-                containWidth: !config.imageSizing.containWidth
+                containHeight: !isHeightMode, // True -> False
+                containWidth: isHeightMode,   // False -> True
             }
         });
     };
 
-    // Helper: Cycle Page Style (Single -> Double -> Long -> Wide -> Single)
     const cyclePageStyle = () => {
         const modes: PageStyle[] = ['single', 'double', 'long-strip', 'wide-strip'];
         const currentIndex = modes.indexOf(config.pageStyle);
@@ -123,7 +127,6 @@ export default function ReaderSidebar({
         setConfig({ ...config, pageStyle: modes[nextIndex] });
     };
 
-    // Helper: Get Label for current style
     const getPageStyleLabel = () => {
         switch(config.pageStyle) {
             case 'single': return 'Single Page';
@@ -263,11 +266,10 @@ export default function ReaderSidebar({
                         
                         {/* 1. BUTTON CYCLE PAGE STYLE */}
                         <button 
-                            onClick={cyclePageStyle} // Panggil fungsi cycle
+                            onClick={cyclePageStyle} 
                             className="w-full h-10 bg-[#3c3e44] hover:bg-[#4a4d55] rounded flex items-center px-3 text-sm text-gray-200 transition gap-3 select-none"
                         >
                             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            {/* Tampilkan label dinamis */}
                             <span>{getPageStyleLabel()}</span>
                         </button>
 
