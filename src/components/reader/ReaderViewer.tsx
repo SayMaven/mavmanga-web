@@ -48,7 +48,7 @@ export default function ReaderViewer({
 
     const defaultConfig: ReaderConfig = {
         pageStyle: 'single',
-        readingDirection: 'rtl',
+        readingDirection: 'ltr',
         headerVisible: true,
         progressBarStyle: 'normal',
         cursorHint: 'none',
@@ -80,35 +80,33 @@ export default function ReaderViewer({
         document.title = `${currentIndex + 1} | ${chapLabel} - ${mangaTitle} | SayMaven`;
     }, [currentIndex, currentChapter, mangaTitle]); 
 
-    // --- LONG STRIP SCROLL TRACKING (FIX FOR TAB BAR BUG) ---
+    // --- LONG STRIP SCROLL TRACKING ---
+    // Fix: Pastikan effect ini berjalan saat isMobile juga jika mode long-strip aktif
     useEffect(() => {
-        // Only run this logic if we are in long-strip mode
-        const activePageStyle = isMobile ? 'single' : readerConfig.pageStyle;
+        // Cek activePageStyle di dalam effect agar selalu fresh
+        const currentStyle = isMobile 
+            ? (readerConfig.pageStyle === 'long-strip' ? 'long-strip' : 'single')
+            : readerConfig.pageStyle;
         
-        if (activePageStyle === 'long-strip' && containerRef.current) {
+        if (currentStyle === 'long-strip' && containerRef.current) {
             const container = containerRef.current;
 
             const handleScroll = () => {
-                if (isNavigatingRef.current) return; // Don't update if jumping via click
+                if (isNavigatingRef.current) return; 
 
-                // Find the image that is closest to the top of the viewport
-                // or takes up the most space in the viewport
                 let bestIndex = currentIndex;
                 let maxVisibility = 0;
                 
                 const containerRect = container.getBoundingClientRect();
-                const viewportHeight = container.clientHeight;
 
                 imageRefs.current.forEach((img, idx) => {
                     if (!img) return;
                     const rect = img.getBoundingClientRect();
                     
-                    // Calculate intersection height
                     const visibleTop = Math.max(containerRect.top, rect.top);
                     const visibleBottom = Math.min(containerRect.bottom, rect.bottom);
                     const visibleHeight = Math.max(0, visibleBottom - visibleTop);
 
-                    // We prefer the image that covers the middle of the screen
                     if (visibleHeight > maxVisibility) {
                         maxVisibility = visibleHeight;
                         bestIndex = idx;
@@ -120,7 +118,6 @@ export default function ReaderViewer({
                 }
             };
 
-            // Use debounce or throttle in production if needed, but standard scroll is okay for modern browsers
             container.addEventListener('scroll', handleScroll, { passive: true });
             return () => container.removeEventListener('scroll', handleScroll);
         }
@@ -175,8 +172,11 @@ export default function ReaderViewer({
     }, [showSidebar, isConfigLoaded]);
 
 
-    // --- DISPLAY LOGIC ---
-    const activePageStyle: PageStyle = isMobile ? 'single' : readerConfig.pageStyle;
+    // --- DISPLAY LOGIC (FIXED FOR MOBILE) ---
+    // Di Mobile: Izinkan 'long-strip', tapi paksa 'single' jika user memilih 'double' atau 'wide-strip'
+    const activePageStyle: PageStyle = isMobile 
+        ? (readerConfig.pageStyle === 'long-strip' ? 'long-strip' : 'single')
+        : readerConfig.pageStyle;
 
     const imagesPerPage = useMemo(() => {
         if (activePageStyle === 'long-strip') return 1;
@@ -261,7 +261,6 @@ export default function ReaderViewer({
         setCurrentIndex(Math.min(index, images.length - 1));
         
         if (activePageStyle === 'long-strip') {
-            // Scroll to specific image in long-strip mode
             const imgTarget = imageRefs.current[index];
             if (imgTarget) {
                 imgTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -271,7 +270,6 @@ export default function ReaderViewer({
             if (readerConfig.fitMode === 'width') window.scrollTo({ top: 0 });
         }
         
-        // Remove 'navigating' lock after animation
         setTimeout(() => { isNavigatingRef.current = false; }, 500);
     }, [readerConfig.fitMode, images.length, activePageStyle]);
 
@@ -285,7 +283,6 @@ export default function ReaderViewer({
                 setShowUI(true);
             }
         };
-        // Attach to window for global scroll events (paged), or specific container if needed
         window.addEventListener('wheel', handleWheel);
         return () => window.removeEventListener('wheel', handleWheel);
     }, [showUI, isSettingsOpen]);
@@ -359,7 +356,6 @@ export default function ReaderViewer({
             className={`relative w-full h-screen bg-[#121212] select-none z-[100] ${containerOverflowClass}`}
         >
             
-            {/* A. LONG STRIP MODE */}
             {activePageStyle === 'long-strip' ? (
                 <div 
                     className="w-full min-h-full flex flex-col items-center pb-20 pt-16 cursor-pointer"
@@ -370,7 +366,6 @@ export default function ReaderViewer({
                     {images.map((imgSrc, idx) => (
                         <img 
                             key={idx}
-                            // Store ref for scroll tracking
                             ref={(el) => { imageRefs.current[idx] = el; }} 
                             src={imgSrc} 
                             alt={`Page ${idx + 1}`}
@@ -391,7 +386,6 @@ export default function ReaderViewer({
                     </div>
                 </div>
             ) : (
-                /* B. PAGINATED MODE */
                 <div 
                     className={`w-full min-h-full flex items-center justify-center gap-0.5 ${readerConfig.imageSizing.containHeight ? 'h-full' : ''}
                     ${readerConfig.readingDirection === 'rtl' ? 'flex-row-reverse' : 'flex-row'} 
@@ -413,7 +407,6 @@ export default function ReaderViewer({
                 </div>
             )}
 
-            {/* Click Zones */}
             {activePageStyle !== 'long-strip' && (
                 <div className="fixed inset-0 flex z-10">
                     <div className="w-[30%] h-full cursor-pointer" onClick={() => handleZoneClick('left')} title={readerConfig.readingDirection === 'ltr' ? "Previous" : "Next"} />
@@ -474,7 +467,6 @@ export default function ReaderViewer({
                 onNextPage={goToNextPage}
             />
 
-            {/* PROGRESS BAR */}
             {readerConfig.progressBarStyle !== 'hidden' && (
                 <ReaderProgressBar 
                     currentIndex={currentIndex}

@@ -5,28 +5,34 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SearchInput from "./SearchInput";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react"; // Tambah useEffect & useRef
 import { BookmarkIcon } from '@heroicons/react/24/outline';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  
+  // Ref untuk input search container (opsional, untuk click outside)
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  // --- LOGIKA SEMBUNYIKAN NAVBAR ---
-  // Jika URL diawali dengan "/read" (halaman baca), jangan tampilkan Navbar.
-  // Pengecekan 'pathname?' memastikan tidak error jika pathname null.
+  // Reset search mode jika pindah halaman
+  useEffect(() => {
+    setIsMobileSearchOpen(false);
+  }, [pathname]);
+
   if (pathname?.startsWith('/read')) {
     return null;
   }
 
   return (
     <nav className="bg-[#191A1C]/95 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
-        <div className="container mx-auto px-4 md:px-6 max-w-[1600px] h-16 flex items-center justify-between gap-4">
+        <div className="container mx-auto px-4 md:px-6 max-w-[1600px] h-16 flex items-center justify-between gap-4 relative">
           
-          {/* ================= BAGIAN KIRI: LOGO & NAMA ================= */}
+          {/* ================= BAGIAN KIRI: LOGO ================= */}
+          {/* Logo disembunyikan saat Mobile Search Aktif */}
           <Link 
             href="/" 
-            className={`flex items-center gap-2 group flex-shrink-0 mr-auto 
+            className={`flex items-center gap-2 group flex-shrink-0 mr-auto transition-all duration-300
               ${isMobileSearchOpen ? 'hidden md:flex' : 'flex'}`}
           >
             <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition flex-shrink-0">
@@ -46,33 +52,42 @@ export default function Navbar() {
           </Link>
 
 
-          {/* ================= BAGIAN KANAN (GROUP) ================= */}
-          <div className={`flex items-center gap-3 md:gap-4 justify-end
-              ${isMobileSearchOpen ? 'flex-1 w-full' : 'flex-none'} 
+          {/* ================= BAGIAN KANAN ================= */}
+          <div className={`flex items-center gap-3 md:gap-4 justify-end transition-all duration-300
+              ${isMobileSearchOpen ? 'w-full absolute left-0 px-4 md:static md:w-auto md:px-0 bg-[#191A1C] md:bg-transparent h-full z-20' : 'flex-none'} 
           `}>
 
-             {/* 1. SEARCH INPUT */}
-             <div className={`
-                ${isMobileSearchOpen ? 'flex flex-1 items-center gap-2 animate-in fade-in slide-in-from-right-4' : 'hidden md:block'}
-             `}>
+              {/* 1. SEARCH INPUT WRAPPER */}
+              <div 
+                ref={searchRef}
+                className={`
+                 transition-all duration-300
+                 ${isMobileSearchOpen ? 'flex w-full items-center gap-3' : 'hidden md:block'}
+              `}
+              >
                 {/* Tombol Back Search (Mobile Only) */}
                 {isMobileSearchOpen && (
                     <button 
                         onClick={() => setIsMobileSearchOpen(false)}
-                        className="md:hidden p-2 text-gray-400 hover:text-white"
+                        className="md:hidden p-1 text-gray-400 hover:text-white flex-shrink-0"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                 )}
 
-                <SearchInput />
-             </div>
+                {/* PENTING: Kita kirim props 'autoFocus' ke SearchInput agar keyboard muncul.
+                    Pastikan SearchInput Anda menerima props ini (lihat langkah 2 di bawah).
+                */}
+                <div className="w-full">
+                    <SearchInput autoFocus={isMobileSearchOpen} />
+                </div>
+              </div>
 
-             {/* 2. TOMBOL TRIGGER SEARCH (MOBILE ONLY) */}
-             {!isMobileSearchOpen && (
-                 <button 
+              {/* 2. TOMBOL TRIGGER SEARCH (Hanya muncul jika search tertutup di mobile) */}
+              {!isMobileSearchOpen && (
+                  <button 
                     onClick={() => setIsMobileSearchOpen(true)}
                     className="md:hidden w-10 h-10 flex items-center justify-center text-gray-300 hover:text-white rounded-full hover:bg-white/10 transition"
                 >
@@ -80,13 +95,13 @@ export default function Navbar() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </button>
-             )}
+              )}
 
 
-             {/* 3. ICON LIBRARY & USER */}
-             <div className={`flex items-center gap-3 md:gap-4 ${isMobileSearchOpen ? 'hidden md:flex' : 'flex'}`}>
+              {/* 3. ICON LIBRARY & USER */}
+              {/* Disembunyikan saat mobile search aktif agar input punya ruang full */}
+              <div className={`flex items-center gap-3 md:gap-4 ${isMobileSearchOpen ? 'hidden md:flex' : 'flex'}`}>
                 
-                {/* TOMBOL LIBRARY */}
                 <Link 
                     href="/library" 
                     className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center text-lg font-bold border transition shadow-lg
@@ -98,7 +113,6 @@ export default function Navbar() {
                    <BookmarkIcon className="h-6 w-6 text-white" />
                 </Link>
 
-                {/* TOMBOL USER */}
                 <div className="w-10 h-10 flex-shrink-0 bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold border border-white/10 hover:border-orange-500 transition cursor-pointer relative overflow-hidden">
                      <Image
                         src="https://res.cloudinary.com/ds4a54vuy/image/upload/v1768230433/What_Lies_Ahead_%28Before_Training%29.jpg"
@@ -108,10 +122,10 @@ export default function Navbar() {
                         className="object-cover"
                       />
                 </div>
-             </div>
+              </div>
 
           </div>
         </div>
-      </nav>
+    </nav>
   );
 }
