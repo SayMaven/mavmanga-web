@@ -40,9 +40,11 @@ export default function ReaderViewer({
     const [showUI, setShowUI] = useState(false); 
     const [showSidebar, setShowSidebar] = useState(false);
     
+    // --- STATE DETEKSI WEBTOON ---
+    const [isWebtoonDetected, setIsWebtoonDetected] = useState(false);
+
     const [imageRatios, setImageRatios] = useState<{[key: number]: number}>({});
     
-    // Refs for Long Strip Observer
     const containerRef = useRef<HTMLDivElement>(null);
     const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
 
@@ -74,21 +76,30 @@ export default function ReaderViewer({
     
     const isNavigatingRef = useRef(false);
 
-    // --- DYNAMIC TAB TITLE UPDATE ---
+    // --- RESET DETEKSI SAAT GANTI CHAPTER ---
+    useEffect(() => {
+        setIsWebtoonDetected(false);
+    }, [currentChapterId, mangaId]);
+
+    // --- DYNAMIC TAB TITLE ---
     useEffect(() => {
         const chapLabel = currentChapter?.chapter ? `Chapter ${currentChapter.chapter}` : "Oneshot";
         document.title = `${currentIndex + 1} | ${chapLabel} - ${mangaTitle} | SayMaven`;
     }, [currentIndex, currentChapter, mangaTitle]); 
 
+    // --- ACTIVE STYLE LOGIC ---
+    const activePageStyle: PageStyle = useMemo(() => {
+        if (isWebtoonDetected) return 'long-strip'; // Force Long Strip jika terdeteksi
+        if (isMobile) {
+            return readerConfig.pageStyle === 'long-strip' ? 'long-strip' : 'single';
+        }
+        return readerConfig.pageStyle;
+    }, [isWebtoonDetected, isMobile, readerConfig.pageStyle]);
+
+
     // --- LONG STRIP SCROLL TRACKING ---
-    // Fix: Pastikan effect ini berjalan saat isMobile juga jika mode long-strip aktif
     useEffect(() => {
-        // Cek activePageStyle di dalam effect agar selalu fresh
-        const currentStyle = isMobile 
-            ? (readerConfig.pageStyle === 'long-strip' ? 'long-strip' : 'single')
-            : readerConfig.pageStyle;
-        
-        if (currentStyle === 'long-strip' && containerRef.current) {
+        if (activePageStyle === 'long-strip' && containerRef.current) {
             const container = containerRef.current;
 
             const handleScroll = () => {
@@ -96,13 +107,11 @@ export default function ReaderViewer({
 
                 let bestIndex = currentIndex;
                 let maxVisibility = 0;
-                
                 const containerRect = container.getBoundingClientRect();
 
                 imageRefs.current.forEach((img, idx) => {
                     if (!img) return;
                     const rect = img.getBoundingClientRect();
-                    
                     const visibleTop = Math.max(containerRect.top, rect.top);
                     const visibleBottom = Math.min(containerRect.bottom, rect.bottom);
                     const visibleHeight = Math.max(0, visibleBottom - visibleTop);
@@ -121,7 +130,7 @@ export default function ReaderViewer({
             container.addEventListener('scroll', handleScroll, { passive: true });
             return () => container.removeEventListener('scroll', handleScroll);
         }
-    }, [readerConfig.pageStyle, isMobile, currentIndex, images.length]);
+    }, [activePageStyle, currentIndex, images.length]);
 
 
     // --- LOGIC POSISI AWAL ---
@@ -172,12 +181,7 @@ export default function ReaderViewer({
     }, [showSidebar, isConfigLoaded]);
 
 
-    // --- DISPLAY LOGIC (FIXED FOR MOBILE) ---
-    // Di Mobile: Izinkan 'long-strip', tapi paksa 'single' jika user memilih 'double' atau 'wide-strip'
-    const activePageStyle: PageStyle = isMobile 
-        ? (readerConfig.pageStyle === 'long-strip' ? 'long-strip' : 'single')
-        : readerConfig.pageStyle;
-
+    // --- DISPLAY LOGIC ---
     const imagesPerPage = useMemo(() => {
         if (activePageStyle === 'long-strip') return 1;
         if (activePageStyle === 'double') {
@@ -273,7 +277,7 @@ export default function ReaderViewer({
         setTimeout(() => { isNavigatingRef.current = false; }, 500);
     }, [readerConfig.fitMode, images.length, activePageStyle]);
 
-    // Scroll Handler (UI Toggle)
+    // Scroll Handler
     useEffect(() => {
         const handleWheel = (e: WheelEvent) => {
             if (isNavigatingRef.current || isSettingsOpen) return;
@@ -326,9 +330,17 @@ export default function ReaderViewer({
         }
     };
 
+    // --- DETEKSI WEBTOON (UPDATED: LEBIH AGRESIF & AKURAT) ---
     const handleImageLoad = (idx: number, e: React.SyntheticEvent<HTMLImageElement>) => {
         const { naturalWidth, naturalHeight } = e.currentTarget;
         const ratio = naturalWidth / naturalHeight;
+
+        // Cek 5 halaman pertama.
+        // Jika rasio < 0.5 (Tinggi > 2x Lebar), aktifkan mode Webtoon
+        if (!isWebtoonDetected && idx < 5 && ratio < 0.5) {
+             setIsWebtoonDetected(true);
+        }
+
         setImageRatios(prev => {
             if (prev[idx] === ratio) return prev;
             return { ...prev, [idx]: ratio };
@@ -356,6 +368,23 @@ export default function ReaderViewer({
             className={`relative w-full h-screen bg-[#121212] select-none z-[100] ${containerOverflowClass}`}
         >
             
+            {/* === PENTING: HIDDEN PRELOADER === */}
+            {/* Ini memaksa 5 gambar pertama dimuat di background agar handleImageLoad berjalan */}
+            {!isWebtoonDetected && (
+                <div className="hidden absolute top-0 left-0 w-0 h-0 overflow-hidden pointer-events-none opacity-0">
+                    {images.slice(0, 5).map((src, idx) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                            key={`preload-${idx}`}
+                            src={src}
+                            onLoad={(e) => handleImageLoad(idx, e)}
+                            alt="preload"
+                        />
+                    ))}
+                </div>
+            )}
+            {/* ================================== */}
+
             {activePageStyle === 'long-strip' ? (
                 <div 
                     className="w-full min-h-full flex flex-col items-center pb-20 pt-16 cursor-pointer"
@@ -369,6 +398,8 @@ export default function ReaderViewer({
                             ref={(el) => { imageRefs.current[idx] = el; }} 
                             src={imgSrc} 
                             alt={`Page ${idx + 1}`}
+                            // Tetap pasang onLoad disini untuk jaga-jaga jika preload gagal atau user refresh
+                            onLoad={(e) => handleImageLoad(idx, e)}
                             className="w-full h-auto max-w-4xl object-contain mb-0.5" 
                             loading="lazy"
                         />
@@ -407,6 +438,7 @@ export default function ReaderViewer({
                 </div>
             )}
 
+            {/* Click Zones */}
             {activePageStyle !== 'long-strip' && (
                 <div className="fixed inset-0 flex z-10">
                     <div className="w-[30%] h-full cursor-pointer" onClick={() => handleZoneClick('left')} title={readerConfig.readingDirection === 'ltr' ? "Previous" : "Next"} />
@@ -460,6 +492,8 @@ export default function ReaderViewer({
                 totalImages={images.length}
                 scanlationGroup={scanlationGroup}
                 uploaderName={uploaderName}
+                
+                isWebtoonMode={isWebtoonDetected}
                 
                 onPageChange={(index) => handleJumpToPage(index)}
                 onChapterChange={(chapterId) => router.push(`/read/${chapterId}`)}

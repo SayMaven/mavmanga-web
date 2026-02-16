@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       // Favicon standar (biasanya 32x32 atau 16x16)
-      { url: '/favicon.ico' }, 
+      { url: '/favicon.ico?v=2' }, 
       // Icon resolusi tinggi untuk browser modern
       { url: '/logo.png', type: 'image/png' }, 
     ],

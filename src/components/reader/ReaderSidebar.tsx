@@ -26,6 +26,9 @@ interface ReaderSidebarProps {
     onNextPage: () => void;
     scanlationGroup: string;
     uploaderName?: string;
+
+    // --- PROP BARU UNTUK HANDLE WEBTOON LOCK ---
+    isWebtoonMode?: boolean;
 }
 
 export default function ReaderSidebar({
@@ -46,7 +49,8 @@ export default function ReaderSidebar({
     onPrevPage,
     onNextPage,
     scanlationGroup,
-    uploaderName = "Unknown User"
+    uploaderName = "Unknown User",
+    isWebtoonMode = false // Default false
 }: ReaderSidebarProps) {
     
     const [openDropdown, setOpenDropdown] = useState<'page' | 'chapter' | null>(null);
@@ -103,31 +107,36 @@ export default function ReaderSidebar({
 
     const handleScrollPropagation = (e: React.WheelEvent) => e.stopPropagation();
 
-    // --- FIX: TOGGLE FIT MODE LOGIC ---
+    // Helper: Toggle Fit Mode
     const toggleFit = () => {
-        // If currently Height mode -> switch to Width
-        // If currently Width mode (or anything else) -> switch to Height
         const isHeightMode = config.imageSizing.containHeight;
-        
         setConfig({
             ...config,
-            fitMode: isHeightMode ? 'width' : 'height', // Also update the main mode string if you use it
+            fitMode: isHeightMode ? 'width' : 'height', 
             imageSizing: {
                 ...config.imageSizing,
-                containHeight: !isHeightMode, // True -> False
-                containWidth: isHeightMode,   // False -> True
+                containHeight: !isHeightMode, 
+                containWidth: isHeightMode,   
             }
         });
     };
 
+    // Helper: Cycle Page Style
     const cyclePageStyle = () => {
+        // --- FIX: cegah ganti style jika sedang di Webtoon Mode ---
+        if (isWebtoonMode) return;
+
         const modes: PageStyle[] = ['single', 'double', 'long-strip', 'wide-strip'];
         const currentIndex = modes.indexOf(config.pageStyle);
         const nextIndex = (currentIndex + 1) % modes.length;
         setConfig({ ...config, pageStyle: modes[nextIndex] });
     };
 
+    // Helper: Get Label for current style
     const getPageStyleLabel = () => {
+        // --- FIX: Tampilkan label khusus ---
+        if (isWebtoonMode) return "Webtoon Mode";
+
         switch(config.pageStyle) {
             case 'single': return 'Single Page';
             case 'double': return 'Double Page';
@@ -264,13 +273,19 @@ export default function ReaderSidebar({
                     {/* SHORTCUT SETTINGS */}
                     <div className="space-y-1">
                         
-                        {/* 1. BUTTON CYCLE PAGE STYLE */}
+                        {/* 1. BUTTON CYCLE PAGE STYLE (LOCKED IF WEBTOON) */}
                         <button 
                             onClick={cyclePageStyle} 
-                            className="w-full h-10 bg-[#3c3e44] hover:bg-[#4a4d55] rounded flex items-center px-3 text-sm text-gray-200 transition gap-3 select-none"
+                            disabled={isWebtoonMode} // Disable jika Webtoon
+                            className={`w-full h-10 rounded flex items-center px-3 text-sm transition gap-3 select-none
+                                ${isWebtoonMode 
+                                    ? 'bg-[#2f3136] text-gray-500 cursor-not-allowed border border-red-900/30' 
+                                    : 'bg-[#3c3e44] hover:bg-[#4a4d55] text-gray-200' 
+                                }`}
                         >
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             <span>{getPageStyleLabel()}</span>
+                            {isWebtoonMode && <span className="ml-auto text-[10px] bg-red-900/50 px-1.5 py-0.5 rounded text-red-200">LOCKED</span>}
                         </button>
 
                         <div className="flex gap-1">

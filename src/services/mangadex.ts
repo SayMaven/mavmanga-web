@@ -134,9 +134,10 @@ export const getRecentlyAdded = async () => getListOnly({
 
 export const getRecommended = async () => getListOnly({
     'limit': 15,
-    'order[followedCount]': 'desc',  
+    'order[relevance]': 'desc',
+    'order[followedCount]': 'desc',
     'originalLanguage[]': ['ja'],
-    'contentRating[]': ['safe', 'suggestive']
+    'contentRating[]': ['safe', 'suggestive', 'pornographic']
 });
 
 // 4. SEARCH FUNCTION (FULL FEATURED + 14 SORT OPTIONS)
