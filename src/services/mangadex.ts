@@ -2,15 +2,19 @@
 
 const API_BASE = 'https://api.mangadex.org';
 
-// --- 1. HELPER FETCH (Untuk List Data) ---
-// Fungsi ini khusus untuk mengambil data berbentuk ARRAY (List Manga, Chapter, dll)
-// Menambahkan dukungan parameter 'options' untuk caching
 const fetchDirect = async (url: URL, options?: RequestInit) => {
   try {
+    const isServer = typeof window === 'undefined';
+
+    const headers: Record<string, string> = {};
+    if (isServer) {
+        headers['User-Agent'] = 'MavManga-App/1.0.0';
+    }
+
     const response = await fetch(url.toString(), { 
-      headers: { 'User-Agent': 'MavManga-App/1.0.0' },
-      cache: 'force-cache', // Default cache
-      ...options, // Merge opsi cache tambahan (revalidate/no-store)
+      headers: headers, 
+      cache: 'force-cache', 
+      ...options, 
     });
 
     if (!response.ok) {
@@ -20,7 +24,6 @@ const fetchDirect = async (url: URL, options?: RequestInit) => {
 
     const json = await response.json();
     return { 
-        // PENTING: Hanya ambil jika array, hindari error jika format beda
         data: Array.isArray(json.data) ? json.data : [],
         total: json.total || 0 
     };
@@ -246,7 +249,6 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
 
     const finalChapters = uniqueChapters.slice(0, limit);
 
-    // Fetch Covers untuk chapter
     const mangaIdsToFetch = finalChapters.map(c => c.relationships.find((r: any) => r.type === 'manga').id);
     
     if (mangaIdsToFetch.length > 0) {
@@ -256,7 +258,6 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
         coversUrl.searchParams.append('limit', '100');
         ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => coversUrl.searchParams.append('contentRating[]', r));
         
-        // Cache covers juga agar sinkron
         const coversRes = await fetchDirect(coversUrl, { next: { revalidate: 60 } });
         const coversData = coversRes.data;
         
@@ -300,24 +301,25 @@ export const getAuthorsByIds = async (ids: string[]) => {
   return res.data; 
 };
 
-// --- 8. DETAIL & READER (PERBAIKAN UTAMA: Cache 1 Jam) ---
-// Sebelumnya pakai fetchDirect (khusus list), jadi error saat ambil single object.
-// Sekarang pakai fetch biasa, tapi kita pasang revalidate agar tetep nge-cache.
+// --- 8. DETAIL & READER ---
 export const getMangaDetail = async (id: string) => {
   const targetUrl = new URL(`${API_BASE}/manga/${id}`);
   ['cover_art', 'author', 'artist'].forEach(i => targetUrl.searchParams.append('includes[]', i));
   
   try {
+    // Gunakan fetch biasa untuk object tunggal, tapi dengan headers kondisional
+    const headers: Record<string, string> = {};
+    if (typeof window === 'undefined') headers['User-Agent'] = 'MavManga-App/1.0.0';
+
     const res = await fetch(targetUrl.toString(), {
-        headers: { 'User-Agent': 'MavManga-App/1.0.0' },
-        next: { revalidate: 3600 } // <--- CACHE AKTIF DISINI
+        headers: headers,
+        next: { revalidate: 3600 } 
     });
     const json = await res.json();
-    return json.data; // Return single object
+    return json.data; 
   } catch (e) { return null; }
 };
 
-// Manga Feed (Cache 2 Menit)
 export const getMangaFeed = async (
     id: string, 
     offset: number = 0, 
@@ -341,31 +343,44 @@ export const getMangaFeed = async (
   };
 };
 
-// Get Pages (No Cache - WAJIB)
 export const getChapterPages = async (chapterId: string) => {
   try {
     const targetUrl = new URL(`${API_BASE}/at-home/server/${chapterId}`);
     targetUrl.searchParams.append('forcePort443', 'false'); 
     
-    // Token MD@Home expired dalam 15 menit, jadi jangan di-cache
-    const response = await fetch(targetUrl.toString(), { cache: 'no-store' });
+    // Browser side fetch jangan pake user-agent manual
+    const headers: Record<string, string> = {};
+    if (typeof window === 'undefined') headers['User-Agent'] = 'MavManga-App/1.0.0';
+
+    const response = await fetch(targetUrl.toString(), { 
+        headers: headers,
+        cache: 'no-store' 
+    });
     
     if (!response.ok) throw new Error(`Error Reader: ${response.status}`);
     return await response.json();
   } catch (error) { return null; }
 };
 
-// Manga Tags (Cache 24 Jam)
+// --- FIX TAGS ISSUE ---
 export const getMangaTags = async () => {
   const targetUrl = new URL(`${API_BASE}/manga/tag`);
-  const res = await fetchDirect(targetUrl, { next: { revalidate: 86400 } });
+  // Gunakan cache 'no-store' saat di client untuk menghindari cache kosong/error
+  // Browser akan mengurus cachingnya sendiri (304 Not Modified dari Mangadex)
+  const isServer = typeof window === 'undefined';
+  const options = isServer ? { next: { revalidate: 86400 } } : { cache: 'no-store' as RequestCache };
+
+  const res = await fetchDirect(targetUrl, options);
   return res.data; 
 };
 
-// Covers (Cache 1 Jam)
 export const getMangaCovers = async (mangaId: string) => {
   try {
+    const headers: Record<string, string> = {};
+    if (typeof window === 'undefined') headers['User-Agent'] = 'MavManga-App/1.0.0';
+
     const res = await fetch(`https://api.mangadex.org/cover?manga[]=${mangaId}&limit=100&order[volume]=asc`, { 
+        headers: headers,
         next: { revalidate: 3600 } 
     });
     const data = await res.json();
@@ -376,7 +391,7 @@ export const getMangaCovers = async (mangaId: string) => {
   }
 };
 
-// --- 9. RECOMMENDATIONS (Cache 1 Hour) ---
+// --- 9. RECOMMENDATIONS ---
 export const getMangaRecommendations = async (
     title: string, 
     tagIds: string[], 
