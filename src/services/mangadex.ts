@@ -2,12 +2,15 @@
 
 const API_BASE = 'https://api.mangadex.org';
 
-// 1. FETCH DIRECT (Return Object: { data, total })
-const fetchDirect = async (url: URL) => {
+// --- 1. HELPER FETCH (Untuk List Data) ---
+// Fungsi ini khusus untuk mengambil data berbentuk ARRAY (List Manga, Chapter, dll)
+// Menambahkan dukungan parameter 'options' untuk caching
+const fetchDirect = async (url: URL, options?: RequestInit) => {
   try {
     const response = await fetch(url.toString(), { 
-      cache: 'no-store', 
-      headers: { 'User-Agent': 'MavManga-App/1.0.0' }
+      headers: { 'User-Agent': 'MavManga-App/1.0.0' },
+      cache: 'force-cache', // Default cache
+      ...options, // Merge opsi cache tambahan (revalidate/no-store)
     });
 
     if (!response.ok) {
@@ -17,6 +20,7 @@ const fetchDirect = async (url: URL) => {
 
     const json = await response.json();
     return { 
+        // PENTING: Hanya ambil jika array, hindari error jika format beda
         data: Array.isArray(json.data) ? json.data : [],
         total: json.total || 0 
     };
@@ -32,8 +36,11 @@ const getDateAgo = (days: number) => {
   return date.toISOString().slice(0, 19);
 };
 
-// 2. GET CUSTOM LIST (Base Function)
-export const getCustomMangaList = async (params: Record<string, string | string[] | number>) => {
+// --- 2. GET CUSTOM LIST (Base Function) ---
+export const getCustomMangaList = async (
+    params: Record<string, string | string[] | number>,
+    options?: RequestInit
+) => {
   const targetUrl = new URL(`${API_BASE}/manga`);
 
   targetUrl.searchParams.append('includes[]', 'cover_art');
@@ -50,77 +57,55 @@ export const getCustomMangaList = async (params: Record<string, string | string[
     }
   });
 
-  return await fetchDirect(targetUrl);
+  return await fetchDirect(targetUrl, options);
 };
 
-// Wrapper untuk Homepage (Agar return Array langsung)
-const getListOnly = async (params: any) => {
-    const res = await getCustomMangaList(params);
+// Wrapper Helper
+const getListOnly = async (params: any, options?: RequestInit) => {
+    const res = await getCustomMangaList(params, options);
     return res.data; 
 }
 
-// 3. HOMEPAGE FUNCTIONS
+// --- 3. HOMEPAGE FUNCTIONS (Cached 1 Hour) ---
+
 export const getPopularNew = async () => getListOnly({
     'limit': 10,
     'order[followedCount]': 'desc',
     'createdAtSince': getDateAgo(35),
     'originalLanguage[]': ['ja', 'ko', 'zh'],
     'contentRating[]': ['safe', 'suggestive', 'erotica'] 
-});
+}, { next: { revalidate: 3600 } });
 
 function getCurrentSeasonStartDate(): string {
   const now = new Date();
-  const month = now.getMonth(); // 0 = Jan, 1 = Feb, ..., 11 = Dec
+  const month = now.getMonth(); 
   const year = now.getFullYear();
 
   let startMonth = 0;
   let startYear = year;
 
-  if (month >= 2 && month <= 4) {
-    // Spring (Maret - Mei) -> Mulai 1 Maret
-    startMonth = 2; // Maret
-  } else if (month >= 5 && month <= 7) {
-    // Summer (Juni - Agustus) -> Mulai 1 Juni
-    startMonth = 5; // Juni
-  } else if (month >= 8 && month <= 10) {
-    // Fall (Sept - Nov) -> Mulai 1 September
-    startMonth = 8; // Sept
-  } else {
-    // Winter (Des - Feb) -> Mulai 1 Desember TAHUN LALU
-    // Jika sekarang Jan/Feb 2026, startnya Des 2025.
-    // Jika sekarang Des 2026, startnya Des 2026.
-    startMonth = 11; // Desember
-    if (month <= 1) { 
-       startYear = year - 1; 
-    }
+  if (month >= 2 && month <= 4) startMonth = 2;
+  else if (month >= 5 && month <= 7) startMonth = 5;
+  else if (month >= 8 && month <= 10) startMonth = 8;
+  else {
+    startMonth = 11;
+    if (month <= 1) startYear = year - 1; 
   }
 
-  // Format ke YYYY-MM-DDT00:00:00
-  // Ingat bulan di JS mulai dari 0, jadi perlu +1 untuk format string jika manual,
-  // tapi Date object menanganinya dengan baik.
   const dateObj = new Date(startYear, startMonth, 1);
   return dateObj.toISOString().split('T')[0] + 'T00:00:00';
 }
 
-// Fungsi Seasonal yang BENAR
 export const getSeasonal = async () => {
     const seasonStart = getCurrentSeasonStartDate();
-
     return getListOnly({
         'limit': 15,
-        // URUTKAN BERDASARKAN POPULARITAS (Followers)
-        // Agar kita dapat "Best New Manga of Winter 2026"
         'order[rating]': 'desc', 
-
-        // FILTER: Hanya manga yang DIBUAT (Debut) sejak awal musim ini
         'createdAtSince': seasonStart,
-
-        // Filter standar
-        'originalLanguage[]': ['ja'], // Fokus manga jepang (biasanya seasonal identik dengan ini)
+        'originalLanguage[]': ['ja'], 
         'contentRating[]': ['safe', 'suggestive', ],
-        // Pastikan manga tersebut bukan sekedar entry kosong (sudah ada chapter)
         'hasAvailableChapters': 'true' 
-    });
+    }, { next: { revalidate: 3600 } });
 };
 
 export const getRecentlyAdded = async () => getListOnly({
@@ -128,9 +113,7 @@ export const getRecentlyAdded = async () => getListOnly({
     'order[createdAt]': 'desc',
     'originalLanguage[]': ['ja', 'ko', 'zh'],
     'contentRating[]': ['safe', 'suggestive', 'erotica']
-});
-
-//   'pornographic'
+}, { next: { revalidate: 3600 } });
 
 export const getRecommended = async () => getListOnly({
     'limit': 15,
@@ -138,9 +121,10 @@ export const getRecommended = async () => getListOnly({
     'order[followedCount]': 'desc',
     'originalLanguage[]': ['ja'],
     'contentRating[]': ['safe', 'suggestive', 'pornographic']
-});
+}, { next: { revalidate: 3600 } });
 
-// 4. SEARCH FUNCTION (FULL FEATURED + 14 SORT OPTIONS)
+
+// --- 4. SEARCH FUNCTION (No Cache) ---
 export const searchManga = async (params: { 
   q?: string, 
   status?: string, 
@@ -160,7 +144,6 @@ export const searchManga = async (params: {
   availableTranslatedLanguage?: string
 }) => {
   
-  // Pagination Logic
   const limit = 30;
   const page = params.page && params.page > 1 ? params.page : 1;
   const offset = (page - 1) * limit;
@@ -172,57 +155,26 @@ export const searchManga = async (params: {
     'includes[]': ['cover_art', 'author', 'artist'],
   };
 
-  // --- 14 SORTING OPTIONS ---
   const sort = params.sortBy || 'none';
 
   switch (sort) {
-    case 'relevance':
-      queryParams['order[relevance]'] = 'desc'; 
-      break;
-    case 'latest_upload':
-      queryParams['order[latestUploadedChapter]'] = 'desc';
-      break;
-    case 'oldest_upload':
-      queryParams['order[latestUploadedChapter]'] = 'asc';
-      break;
-    case 'title_asc':
-      queryParams['order[title]'] = 'asc';
-      break;
-    case 'title_desc':
-      queryParams['order[title]'] = 'desc';
-      break;
-    case 'rating_high':
-      queryParams['order[rating]'] = 'desc';
-      break;
-    case 'rating_low':
-      queryParams['order[rating]'] = 'asc';
-      break;
-    case 'follows_high':
-      queryParams['order[followedCount]'] = 'desc';
-      break;
-    case 'follows_low':
-      queryParams['order[followedCount]'] = 'asc';
-      break;
-    case 'created_new':
-      queryParams['order[createdAt]'] = 'desc'; 
-      break;
-    case 'created_old':
-      queryParams['order[createdAt]'] = 'asc'; 
-      break;
-    case 'year_asc':
-      queryParams['order[year]'] = 'asc';
-      break;
-    case 'year_desc':
-      queryParams['order[year]'] = 'desc';
-      break;
+    case 'relevance': queryParams['order[relevance]'] = 'desc'; break;
+    case 'latest_upload': queryParams['order[latestUploadedChapter]'] = 'desc'; break;
+    case 'oldest_upload': queryParams['order[latestUploadedChapter]'] = 'asc'; break;
+    case 'title_asc': queryParams['order[title]'] = 'asc'; break;
+    case 'title_desc': queryParams['order[title]'] = 'desc'; break;
+    case 'rating_high': queryParams['order[rating]'] = 'desc'; break;
+    case 'rating_low': queryParams['order[rating]'] = 'asc'; break;
+    case 'follows_high': queryParams['order[followedCount]'] = 'desc'; break;
+    case 'follows_low': queryParams['order[followedCount]'] = 'asc'; break;
+    case 'created_new': queryParams['order[createdAt]'] = 'desc'; break;
+    case 'created_old': queryParams['order[createdAt]'] = 'asc'; break;
+    case 'year_asc': queryParams['order[year]'] = 'asc'; break;
+    case 'year_desc': queryParams['order[year]'] = 'desc'; break;
     case 'none':
-    default:
-      queryParams['order[latestUploadedChapter]'] = 'desc';
-      break;
+    default: queryParams['order[latestUploadedChapter]'] = 'desc'; break;
   }
-  // ---------------------------
 
-  // Filters
   if (params.includedTags) queryParams['includedTags[]'] = params.includedTags.split(',');
   if (params.excludedTags) queryParams['excludedTags[]'] = params.excludedTags.split(',');
   if (params.includedTagsMode) queryParams['includedTagsMode'] = params.includedTagsMode;
@@ -248,7 +200,6 @@ export const searchManga = async (params: {
   if (params.year) queryParams['year'] = params.year;
   if (params.hasChapters === 'true') queryParams['hasAvailableChapters'] = 'true';
 
-  // Authors & Artists
   if (params.authors && params.authors !== '') {
     queryParams['authors[]'] = params.authors.split(',');
   }
@@ -256,16 +207,16 @@ export const searchManga = async (params: {
     queryParams['artists[]'] = params.artists.split(',');
   }
 
-  return getCustomMangaList(queryParams);
+  // Gunakan cache: 'no-store' agar hasil search selalu fresh saat filter diubah
+  return getCustomMangaList(queryParams, { cache: 'no-store' });
 };
 
-// 5. LATEST UPDATES (FIXED)
+// --- 5. LATEST UPDATES (Cache 60 Detik) ---
 export const getLatestChapters = async (limit = 24, page = 1) => { 
   const offset = (page - 1) * limit;
   
   const targetUrl = new URL(`${API_BASE}/chapter`);
   targetUrl.searchParams.append('limit', '100'); 
-  
   targetUrl.searchParams.append('offset', offset.toString()); 
   targetUrl.searchParams.append('order[readableAt]', 'desc'); 
   targetUrl.searchParams.append('includes[]', 'manga'); 
@@ -275,7 +226,7 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
   ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => targetUrl.searchParams.append('contentRating[]', r));
 
   try {
-    const response = await fetchDirect(targetUrl);
+    const response = await fetchDirect(targetUrl, { next: { revalidate: 60 } });
     const data = response.data;
 
     if (!Array.isArray(data)) return [];
@@ -295,6 +246,7 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
 
     const finalChapters = uniqueChapters.slice(0, limit);
 
+    // Fetch Covers untuk chapter
     const mangaIdsToFetch = finalChapters.map(c => c.relationships.find((r: any) => r.type === 'manga').id);
     
     if (mangaIdsToFetch.length > 0) {
@@ -304,7 +256,8 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
         coversUrl.searchParams.append('limit', '100');
         ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => coversUrl.searchParams.append('contentRating[]', r));
         
-        const coversRes = await fetchDirect(coversUrl);
+        // Cache covers juga agar sinkron
+        const coversRes = await fetchDirect(coversUrl, { next: { revalidate: 60 } });
         const coversData = coversRes.data;
         
         const coverMap: Record<string, string> = {};
@@ -328,85 +281,93 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
   }
 };
 
-// 6. SEARCH PEOPLE (Untuk Filter Author/Artist)
+// --- 6. SEARCH PEOPLE (No Cache) ---
 export const searchPeople = async (name: string) => {
   const targetUrl = new URL(`${API_BASE}/author`);
   targetUrl.searchParams.append('name', name);
   targetUrl.searchParams.append('limit', '10'); 
-  const res = await fetchDirect(targetUrl);
+  const res = await fetchDirect(targetUrl, { cache: 'no-store' });
   return res.data; 
 };
 
-// 7. GET AUTHORS BY IDS (Untuk Sync Nama Author/Artist di Frontend)
+// --- 7. GET AUTHORS BY IDS (Cache 1 Hour) ---
 export const getAuthorsByIds = async (ids: string[]) => {
   if (ids.length === 0) return [];
   const targetUrl = new URL(`${API_BASE}/author`);
   ids.forEach(id => targetUrl.searchParams.append('ids[]', id));
   targetUrl.searchParams.append('limit', '100'); 
-  const res = await fetchDirect(targetUrl);
+  const res = await fetchDirect(targetUrl, { next: { revalidate: 3600 } });
   return res.data; 
 };
 
-// 8. DETAIL & READER
+// --- 8. DETAIL & READER (PERBAIKAN UTAMA: Cache 1 Jam) ---
+// Sebelumnya pakai fetchDirect (khusus list), jadi error saat ambil single object.
+// Sekarang pakai fetch biasa, tapi kita pasang revalidate agar tetep nge-cache.
 export const getMangaDetail = async (id: string) => {
   const targetUrl = new URL(`${API_BASE}/manga/${id}`);
   ['cover_art', 'author', 'artist'].forEach(i => targetUrl.searchParams.append('includes[]', i));
+  
   try {
-    const res = await fetch(targetUrl.toString());
+    const res = await fetch(targetUrl.toString(), {
+        headers: { 'User-Agent': 'MavManga-App/1.0.0' },
+        next: { revalidate: 3600 } // <--- CACHE AKTIF DISINI
+    });
     const json = await res.json();
-    return json.data;
+    return json.data; // Return single object
   } catch (e) { return null; }
 };
 
-
+// Manga Feed (Cache 2 Menit)
 export const getMangaFeed = async (
     id: string, 
     offset: number = 0, 
     order: 'asc' | 'desc' = 'desc', 
-    limit: number = 100 // Parameter sudah benar
+    limit: number = 100
 ) => {
   const targetUrl = new URL(`${API_BASE}/manga/${id}/feed`);
   
-  // --- PERBAIKAN DISINI ---
-  // Jangan hardcode '100', tapi gunakan variabel 'limit'
   targetUrl.searchParams.append('limit', limit.toString()); 
-  
   targetUrl.searchParams.append('offset', offset.toString());
-  
-  // GUNAKAN PARAMETER ORDER DISINI
   targetUrl.searchParams.append('order[volume]', order); 
   targetUrl.searchParams.append('order[chapter]', order);
   
-  // Filter Rating & Includes (Wajib ada)
   ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => targetUrl.searchParams.append('contentRating[]', r));
   ['scanlation_group', 'user'].forEach(i => targetUrl.searchParams.append('includes[]', i));
   
-  const res = await fetchDirect(targetUrl);
+  const res = await fetchDirect(targetUrl, { next: { revalidate: 120 } });
   return {
       data: res.data || [],
       total: res.total || 0
   };
 };
 
+// Get Pages (No Cache - WAJIB)
 export const getChapterPages = async (chapterId: string) => {
   try {
     const targetUrl = new URL(`${API_BASE}/at-home/server/${chapterId}`);
     targetUrl.searchParams.append('forcePort443', 'false'); 
-    const response = await fetch(targetUrl.toString());
+    
+    // Token MD@Home expired dalam 15 menit, jadi jangan di-cache
+    const response = await fetch(targetUrl.toString(), { cache: 'no-store' });
+    
     if (!response.ok) throw new Error(`Error Reader: ${response.status}`);
     return await response.json();
   } catch (error) { return null; }
 };
 
+// Manga Tags (Cache 24 Jam)
 export const getMangaTags = async () => {
   const targetUrl = new URL(`${API_BASE}/manga/tag`);
-  const res = await fetchDirect(targetUrl);
-  return res.data; // Mengembalikan list tags (id, attributes: { name, group })
+  const res = await fetchDirect(targetUrl, { next: { revalidate: 86400 } });
+  return res.data; 
 };
 
+// Covers (Cache 1 Jam)
 export const getMangaCovers = async (mangaId: string) => {
   try {
-    const res = await fetch(`https://api.mangadex.org/cover?manga[]=${mangaId}&limit=100&order[volume]=asc`, { next: { revalidate: 3600 } });
+    const res = await fetch(`https://api.mangadex.org/cover?manga[]=${mangaId}&limit=100&order[volume]=asc`, { 
+        next: { revalidate: 3600 } 
+    });
     const data = await res.json();
     return data.data || [];
   } catch (error) {
@@ -415,9 +376,7 @@ export const getMangaCovers = async (mangaId: string) => {
   }
 };
 
-
-// src/services/mangadex.ts
-
+// --- 9. RECOMMENDATIONS (Cache 1 Hour) ---
 export const getMangaRecommendations = async (
     title: string, 
     tagIds: string[], 
@@ -425,78 +384,60 @@ export const getMangaRecommendations = async (
     currentId?: string
 ) => {
   try {
-    const results = new Map(); // Pakai Map untuk otomatis handle duplikat ID
+    const results = new Map();
 
-    // --- CONFIG FILTER UMUM (Dipakai di kedua fetch) ---
-    // Helper untuk append params standar
     const appendBaseParams = (url: URL) => {
         url.searchParams.append('limit', '25');
         url.searchParams.append('includes[]', 'cover_art');
         url.searchParams.append('includes[]', 'author');
-        url.searchParams.append('hasAvailableChapters', 'true'); // Pastikan ada isinya
+        url.searchParams.append('hasAvailableChapters', 'true');
         
-        // STRICT DEMOGRAPHIC: Agar Josei tidak nyampur Shounen
         if (demographic) {
             url.searchParams.append('publicationDemographic[]', demographic);
         }
 
-        // NO CONTENT RATING LIMIT
         ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => 
             url.searchParams.append('contentRating[]', r)
         );
     };
 
-    // --- FETCH 1: BERDASARKAN JUDUL (Prioritas Utama) ---
-    // Mencari manga dengan nama mirip (misal: "Beyblade")
+    const cacheOptions = { next: { revalidate: 3600 } };
+
     if (title) {
         const urlTitle = new URL(`${API_BASE}/manga`);
-        // Bersihkan judul dari simbol aneh agar pencarian lebih akurat
         const cleanTitle = title.replace(/[^\w\s]/gi, '').trim(); 
         urlTitle.searchParams.append('title', cleanTitle);
-        
-        // SORTING: RELEVANCE (Bukan Popularity!)
         urlTitle.searchParams.append('order[relevance]', 'desc');
-        
         appendBaseParams(urlTitle);
 
         try {
-            const resTitle = await fetchDirect(urlTitle);
+            const resTitle = await fetchDirect(urlTitle, cacheOptions);
             if (resTitle.data && Array.isArray(resTitle.data)) {
                 resTitle.data.forEach((m: any) => {
                     if (m.id !== currentId) results.set(m.id, m);
                 });
             }
-        } catch (e) { /* Ignore fail */ }
+        } catch (e) { }
     }
 
-    // --- FETCH 2: BERDASARKAN TAGS/GENRE (Pelengkap) ---
-    // Jika hasil judul < 12, cari berdasarkan Genre yang cocok
     if (results.size < 12 && tagIds && tagIds.length > 0) {
         const urlTags = new URL(`${API_BASE}/manga`);
-        
-        // Ambil 5 Tag agar spesifik (misal: Romance + School + SliceOfLife + Drama)
-        // Semakin banyak tag, semakin "mirip" isinya, bukan sekedar populer
         tagIds.slice(0, 5).forEach(tag => {
             urlTags.searchParams.append('includedTags[]', tag);
         });
-
-        // SORTING: RELEVANCE (Cari yang tag-nya paling banyak cocok)
         urlTags.searchParams.append('order[relevance]', 'desc');
-        // OPSI ALTERNATIF: Jika relevance isinya sampah, bisa ganti 'order[rating]=desc' (Kualitas bagus, bukan populer)
-        
         appendBaseParams(urlTags);
 
         try {
-            const resTags = await fetchDirect(urlTags);
+            const resTags = await fetchDirect(urlTags, cacheOptions);
             if (resTags.data && Array.isArray(resTags.data)) {
                 resTags.data.forEach((m: any) => {
                     if (m.id !== currentId) results.set(m.id, m);
                 });
             }
-        } catch (e) { /* Ignore fail */ }
+        } catch (e) { }
     }
 
-    // Kembalikan sebagai Array
     return Array.from(results.values());
 
   } catch (error) {
