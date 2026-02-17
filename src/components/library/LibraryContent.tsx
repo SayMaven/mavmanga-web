@@ -150,6 +150,7 @@ export default function LibraryContent() {
                                     <img 
                                         src={manga.cover || 'https://placehold.co/300x450/333/999?text=No+Cover'} 
                                         alt={displayTitle}
+                                        referrerPolicy="no-referrer"
                                         className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90 group-hover:opacity-100"
                                     />
                                     
