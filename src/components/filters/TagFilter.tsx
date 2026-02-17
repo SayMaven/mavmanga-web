@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { getMangaTags } from '@/services/mangadex';
+// --- PERUBAHAN DISINI: Import dari actions, bukan services ---
+import { fetchTagsServer } from '@/app/actions'; 
 
 interface TagFilterProps {
   includedTags: string[];
@@ -21,10 +22,14 @@ export default function TagFilter({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // --- FETCH DATA MENGGUNAKAN SERVER ACTION ---
   useEffect(() => {
     const fetchTags = async () => {
-        const tags = await getMangaTags();
-        if (tags) setAllTags(tags);
+        // Panggil Server Action (berjalan di server)
+        const tags = await fetchTagsServer();
+        if (tags && Array.isArray(tags)) {
+            setAllTags(tags);
+        }
     };
     fetchTags();
   }, []);
