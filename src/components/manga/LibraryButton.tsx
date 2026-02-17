@@ -171,7 +171,7 @@ export default function LibraryButton({ manga }: { manga: any }) {
                     <div className="w-32 flex-shrink-0">
                         <div className="rounded-md overflow-hidden shadow-lg aspect-[2/3]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={coverUrl} alt="cover" className="w-full h-full object-cover" />
+                            <img src={coverUrl} referrerPolicy="no-referrer" alt="cover" className="w-full h-full object-cover" />
                         </div>
                     </div>
 
