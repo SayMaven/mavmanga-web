@@ -239,7 +239,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
                          return (
                             <Link key={rec.id} href={`/manga/${rec.id}`} className="group relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-white/5 bg-[#232529]">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={recImage} alt={recTitle} className="w-full h-full object-cover transition duration-300 group-hover:scale-110" />
+                                <img src={recImage} referrerPolicy="no-referrer" alt={recTitle} className="w-full h-full object-cover transition duration-300 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
                                 <div className="absolute bottom-0 left-0 right-0 p-2">
                                     <h4 className="text-[10px] font-bold text-white line-clamp-2 leading-tight group-hover:text-orange-400 transition">
