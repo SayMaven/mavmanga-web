@@ -22,7 +22,7 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="min-h-screen bg-[#121212] text-white font-sans pb-24">
+    <main className="min-h-screen bg-[#121212] text-white font-sans pb-10">
       
       {/* 2. PASANG KOMPONEN DISINI (Akan muncul di atas segalanya) */}
       <ContentWarning />
@@ -87,6 +87,29 @@ export default async function Home() {
         />
 
       </div>
+
+      {/* --- FOOTER SECTION --- */}
+      <footer className="mt-32 border-t border-white/5 py-12 text-center">
+        <div className="container mx-auto px-4">
+            <p className="text-gray-500 text-sm flex items-center justify-center gap-1.5">
+               <span>Powered by</span>
+               <a 
+                 href="https://mangadex.org" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 className="text-[#FF6740] hover:text-[#ff8566] font-bold transition-colors flex items-center gap-1"
+               >
+                 MangaDex
+                 {/* Optional: Icon External Link kecil */}
+                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+               </a>
+            </p>
+            <p className="text-gray-600 text-xs mt-2">
+               MavenManga does not store any files on its server. All contents are provided by non-affiliated third parties.
+            </p>
+        </div>
+      </footer>
+
     </main>
   );
 }
