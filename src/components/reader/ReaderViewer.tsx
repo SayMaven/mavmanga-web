@@ -379,6 +379,7 @@ export default function ReaderViewer({
                             src={src}
                             onLoad={(e) => handleImageLoad(idx, e)}
                             alt="preload"
+                            referrerPolicy="no-referrer"
                         />
                     ))}
                 </div>
@@ -402,6 +403,7 @@ export default function ReaderViewer({
                             onLoad={(e) => handleImageLoad(idx, e)}
                             className="w-full h-auto max-w-4xl object-contain mb-0.5" 
                             loading="lazy"
+                            referrerPolicy="no-referrer"
                         />
                     ))}
                     <div className="flex flex-col gap-4 mt-8 mb-20 text-center" onClick={(e) => e.stopPropagation()}>
@@ -432,6 +434,7 @@ export default function ReaderViewer({
                                 onLoad={(e) => handleImageLoad(actualIdx, e)}
                                 className={`${getPagedImageStyle(imagesPerPage)} shadow-lg`}
                                 loading="eager"
+                                referrerPolicy="no-referrer"
                             />
                         );
                     })}
