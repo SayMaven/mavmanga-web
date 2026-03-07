@@ -1,3 +1,4 @@
+// src/app/read/[chapterId]/page.tsx
 import { Metadata } from "next";
 import { getMangaFeed, getMangaDetail } from "@/services/mangadex"; 
 import ReaderViewer from "@/components/reader/ReaderViewer";

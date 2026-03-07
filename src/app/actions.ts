@@ -1,11 +1,26 @@
 // src/app/actions.ts
 'use server';
 
-import { getMangaTags } from "@/services/mangadex";
+import { getMangaTags, getChapterPages } from "@/services/mangadex";
 
-// Fungsi ini akan berjalan di Server Vercel, lalu hasilnya dikirim ke HP
+// Fungsi untuk Filter Tags
 export async function fetchTagsServer() {
-  // Panggil service yang sudah ada
-  const tags = await getMangaTags();
-  return tags;
+  try {
+    const tags = await getMangaTags();
+    return tags;
+  } catch (error) {
+    console.error("Server Action Error (Tags):", error);
+    return [];
+  }
+}
+
+// --- FUNGSI BARU UNTUK READER YANG TADI ERROR ---
+export async function fetchChapterPagesServer(chapterId: string) {
+  try {
+    const data = await getChapterPages(chapterId);
+    return data;
+  } catch (error) {
+    console.error("Server Action Error (Pages):", error);
+    return null;
+  }
 }
