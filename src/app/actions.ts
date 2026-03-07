@@ -14,7 +14,6 @@ export async function fetchTagsServer() {
   }
 }
 
-// --- FUNGSI BARU UNTUK READER YANG TADI ERROR ---
 export async function fetchChapterPagesServer(chapterId: string) {
   try {
     const data = await getChapterPages(chapterId);
