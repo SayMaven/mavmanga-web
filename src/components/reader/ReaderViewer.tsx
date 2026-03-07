@@ -9,7 +9,7 @@ import GapModal from "./GapModal";
 import ReaderProgressBar from "./ReaderProgressBar";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { ReaderConfig, PageStyle } from "@/types/readerTypes"; 
-import { fetchChapterPagesServer } from "@/app/actions";
+import { getChapterPages } from "@/services/mangadex";
 
 interface ReaderViewerProps {
     chapterId: string;
@@ -50,7 +50,7 @@ export default function ReaderViewer({
     useEffect(() => {
         const fetchImages = async () => {
             setIsLoadingImgs(true); setIsImgError(false);
-            const data = await fetchChapterPagesServer(chapterId);
+            const data = await getChapterPages(chapterId);
             if (data?.chapter?.data?.length) {
                 const { baseUrl, chapter: { hash, data: files } } = data;
                 setImages(files.map((file: string) => `${baseUrl}/data/${hash}/${file}`));
