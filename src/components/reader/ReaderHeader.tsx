@@ -1,12 +1,12 @@
 // src/components/reader/ReaderHeader.tsx
 'use client';
 
-import Link from "next/link"; // Import Link dari Next.js
+import Link from "next/link"; 
 
 interface ReaderHeaderProps {
     showUI: boolean;
     mangaTitle: string;
-    mangaId: string;             // <-- Tambahkan prop ini
+    mangaId: string;             
     currentChapter: any;         
     currentIndex: number;
     totalImages: number;
@@ -17,7 +17,7 @@ interface ReaderHeaderProps {
 export default function ReaderHeader({
     showUI,
     mangaTitle,
-    mangaId,                     // <-- Terima prop ini
+    mangaId,                     
     currentChapter,
     currentIndex,
     totalImages,
@@ -25,19 +25,15 @@ export default function ReaderHeader({
     onOpenSidebar
 }: ReaderHeaderProps) {
     
-    // --- 1. LOGIC DATA ---
     const vol = currentChapter?.volume;
     const ch = currentChapter?.chapter;
     const title = currentChapter?.title;
 
-    // String Pendek untuk Status Bar (Kiri) -> "Vol. 1, Ch. 2"
     const volChStr = [
         vol && vol !== 'none' ? `Vol. ${vol}` : null,
         ch && ch !== 'none' ? `Ch. ${ch}` : null
     ].filter(Boolean).join(', ');
 
-    // String Judul Utama (Atas) -> Cukup "Malam 2" (title) jika ada.
-    // Jika tidak ada title, baru fallback ke "Vol. 1, Ch. 2"
     const mainDisplayTitle = title ? title : (volChStr || "Oneshot");
 
     return (

@@ -177,7 +177,7 @@ export default function ReaderViewer({
     };
 
     if (isLoadingImgs) return <div className="h-screen flex items-center justify-center bg-[#121212] text-white">Loading pages...</div>;
-    if (isImgError || !images.length) return <div className="h-screen flex items-center justify-center bg-[#121212] text-red-500">Failed to load pages.</div>;
+    if (isImgError || !images.length) return <div className="h-screen flex items-center justify-center bg-[#121212] text-red-500">Gagal untuk memuat halaman.</div>;
 
     const imgStyle = (c: number) => `transition-all duration-200 object-contain ${readerConfig.imageSizing.containHeight ? 'h-screen w-auto' : readerConfig.imageSizing.containWidth ? 'w-full h-auto' : 'h-screen w-auto'} ${c===1?'max-w-full':c===2?'max-w-[50vw]':'max-w-[33vw]'}`;
     
