@@ -1,4 +1,4 @@
-// src/components/reader/settings/BehaviorsSettings.tsx
+// src/components/reader/settings/BehaviorsSettings.tsx 
 'use client';
 import { ReaderConfig, ScrollPageType } from "@/types/readerTypes";
 
