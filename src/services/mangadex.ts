@@ -11,7 +11,6 @@ const fetchDirect = async (url: URL, options?: RequestInit) => {
 
   const response = await fetch(url.toString(), { 
     headers: headers, 
-    cache: 'force-cache', 
     ...options, 
   });
 
