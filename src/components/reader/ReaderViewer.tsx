@@ -53,8 +53,9 @@ export default function ReaderViewer({
             setIsLoadingImgs(true); setIsImgError(false);
             const data = await fetchChapterPagesServer(chapterId);
             if (data?.chapter?.data?.length) {
-                const { baseUrl, chapter: { hash, data: files } } = data;
-                setImages(files.map((file: string) => `${baseUrl}/data/${hash}/${file}`));
+                const { chapter: { hash, data: files } } = data;
+                const masterBaseUrl = "https://uploads.mangadex.org";
+                setImages(files.map((file: string) => `${masterBaseUrl}/data/${hash}/${file}`));
             } else { setIsImgError(true); }
             setIsLoadingImgs(false);
         };
