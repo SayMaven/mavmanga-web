@@ -6,12 +6,12 @@ const fetchDirect = async (url: URL, options?: RequestInit) => {
   const isServer = typeof window === 'undefined';
   const headers: Record<string, string> = {};
   if (isServer) {
-      headers['User-Agent'] = 'MavManga-App/1.0.0';
+    headers['User-Agent'] = 'MavManga-App/1.0.0';
   }
 
-  const response = await fetch(url.toString(), { 
-    headers: headers, 
-    ...options, 
+  const response = await fetch(url.toString(), {
+    headers: headers,
+    ...options,
   });
 
   if (!response.ok) {
@@ -20,9 +20,9 @@ const fetchDirect = async (url: URL, options?: RequestInit) => {
   }
 
   const json = await response.json();
-  return { 
-      data: Array.isArray(json.data) ? json.data : [],
-      total: json.total || 0 
+  return {
+    data: Array.isArray(json.data) ? json.data : [],
+    total: json.total || 0
   };
 };
 
@@ -33,8 +33,8 @@ const getDateAgo = (days: number) => {
 };
 
 export const getCustomMangaList = async (
-    params: Record<string, string | string[] | number>,
-    options?: RequestInit
+  params: Record<string, string | string[] | number>,
+  options?: RequestInit
 ) => {
   const targetUrl = new URL(`${API_BASE}/manga`);
 
@@ -53,32 +53,32 @@ export const getCustomMangaList = async (
   });
 
   try {
-      return await fetchDirect(targetUrl, options);
+    return await fetchDirect(targetUrl, options);
   } catch (error) {
-      throw error;
+    throw error;
   }
 };
 
 const getListOnly = async (params: any, options?: RequestInit) => {
-    try {
-        const res = await getCustomMangaList(params, options);
-        return res.data; 
-    } catch (error) {
-        return [];
-    }
+  try {
+    const res = await getCustomMangaList(params, options);
+    return res.data;
+  } catch (error) {
+    return [];
+  }
 }
 
 export const getPopularNew = async () => getListOnly({
-    'limit': 10,
-    'order[followedCount]': 'desc',
-    'createdAtSince': getDateAgo(35),
-    'originalLanguage[]': ['ja', 'ko', 'zh'],
-    'contentRating[]': ['safe', 'suggestive', 'erotica'] 
-}, { next: { revalidate: 21600 } }); 
+  'limit': 10,
+  'order[followedCount]': 'desc',
+  'createdAtSince': getDateAgo(35),
+  'originalLanguage[]': ['ja', 'ko', 'zh'],
+  'contentRating[]': ['safe', 'suggestive', 'erotica']
+}, { next: { revalidate: 21600 } });
 
 function getCurrentSeasonStartDate(): string {
   const now = new Date();
-  const month = now.getMonth(); 
+  const month = now.getMonth();
   const year = now.getFullYear();
 
   let startMonth = 0; let startYear = year;
@@ -91,29 +91,29 @@ function getCurrentSeasonStartDate(): string {
 }
 
 export const getSeasonal = async () => {
-    return getListOnly({
-        'limit': 15,
-        'order[rating]': 'desc', 
-        'createdAtSince': getCurrentSeasonStartDate(),
-        'originalLanguage[]': ['ja'], 
-        'contentRating[]': ['safe', 'suggestive', ],
-        'hasAvailableChapters': 'true' 
-    }, { next: { revalidate: 21600 } }); 
+  return getListOnly({
+    'limit': 15,
+    'order[rating]': 'desc',
+    'createdAtSince': getCurrentSeasonStartDate(),
+    'originalLanguage[]': ['ja'],
+    'contentRating[]': ['safe', 'suggestive',],
+    'hasAvailableChapters': 'true'
+  }, { next: { revalidate: 21600 } });
 };
 
 export const getRecentlyAdded = async () => getListOnly({
-    'limit': 15,
-    'order[createdAt]': 'desc',
-    'originalLanguage[]': ['ja', 'ko', 'zh'],
-    'contentRating[]': ['safe', 'suggestive', 'erotica']
+  'limit': 15,
+  'order[createdAt]': 'desc',
+  'originalLanguage[]': ['ja', 'ko', 'zh'],
+  'contentRating[]': ['safe', 'suggestive', 'erotica']
 }, { next: { revalidate: 21600 } });
 
 export const getRecommended = async () => getListOnly({
-    'limit': 15,
-    'order[relevance]': 'desc',
-    'order[followedCount]': 'desc',
-    'originalLanguage[]': ['ja'],
-    'contentRating[]': ['safe', 'suggestive', 'pornographic']
+  'limit': 15,
+  'order[relevance]': 'desc',
+  'order[followedCount]': 'desc',
+  'originalLanguage[]': ['ja'],
+  'contentRating[]': ['safe', 'suggestive', 'pornographic']
 }, { next: { revalidate: 21600 } });
 
 export const searchManga = async (params: any) => {
@@ -153,7 +153,7 @@ export const searchManga = async (params: any) => {
   if (params.excludedTagsMode) queryParams['excludedTagsMode'] = params.excludedTagsMode;
   if (params.status && params.status !== 'any') queryParams['status[]'] = params.status.split(',');
   if (params.demographic && params.demographic !== 'any') queryParams['publicationDemographic[]'] = params.demographic;
-  
+
   if (params.rating && params.rating !== 'any' && params.rating !== '') {
     queryParams['contentRating[]'] = params.rating.split(',');
   } else {
@@ -173,15 +173,15 @@ export const searchManga = async (params: any) => {
   return getCustomMangaList(queryParams, { next: { revalidate: 60 } });
 };
 
-export const getLatestChapters = async (limit = 24, page = 1) => { 
+export const getLatestChapters = async (limit = 24, page = 1) => {
   const offset = (page - 1) * limit;
   const targetUrl = new URL(`${API_BASE}/chapter`);
-  targetUrl.searchParams.append('limit', '100'); 
-  targetUrl.searchParams.append('offset', offset.toString()); 
-  targetUrl.searchParams.append('order[readableAt]', 'desc'); 
-  targetUrl.searchParams.append('includes[]', 'manga'); 
-  targetUrl.searchParams.append('includes[]', 'scanlation_group'); 
-  targetUrl.searchParams.append('includes[]', 'user'); 
+  targetUrl.searchParams.append('limit', '100');
+  targetUrl.searchParams.append('offset', offset.toString());
+  targetUrl.searchParams.append('order[readableAt]', 'desc');
+  targetUrl.searchParams.append('includes[]', 'manga');
+  targetUrl.searchParams.append('includes[]', 'scanlation_group');
+  targetUrl.searchParams.append('includes[]', 'user');
   ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => targetUrl.searchParams.append('contentRating[]', r));
 
   try {
@@ -204,29 +204,29 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
 
     const finalChapters = uniqueChapters.slice(0, limit);
     const mangaIdsToFetch = finalChapters.map(c => c.relationships.find((r: any) => r.type === 'manga').id);
-    
+
     if (mangaIdsToFetch.length > 0) {
-        const coversUrl = new URL(`${API_BASE}/manga`);
-        mangaIdsToFetch.forEach(id => coversUrl.searchParams.append('ids[]', id));
-        coversUrl.searchParams.append('includes[]', 'cover_art');
-        coversUrl.searchParams.append('limit', '100');
-        ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => coversUrl.searchParams.append('contentRating[]', r));
-        
-        const coversRes = await fetchDirect(coversUrl, { next: { revalidate: 900 } });
-        const coversData = coversRes.data;
-        const coverMap: Record<string, string> = {};
-        if (Array.isArray(coversData)) {
-            coversData.forEach((manga: any) => {
-                const coverRel = manga.relationships.find((r: any) => r.type === 'cover_art');
-                if (coverRel?.attributes?.fileName) {
-                    coverMap[manga.id] = coverRel.attributes.fileName;
-                }
-            });
-        }
-        return finalChapters.map(chapter => {
-            const mangaRel = chapter.relationships.find((r: any) => r.type === 'manga');
-            return { ...chapter, coverFileName: coverMap[mangaRel.id] || null };
+      const coversUrl = new URL(`${API_BASE}/manga`);
+      mangaIdsToFetch.forEach(id => coversUrl.searchParams.append('ids[]', id));
+      coversUrl.searchParams.append('includes[]', 'cover_art');
+      coversUrl.searchParams.append('limit', '100');
+      ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => coversUrl.searchParams.append('contentRating[]', r));
+
+      const coversRes = await fetchDirect(coversUrl, { next: { revalidate: 900 } });
+      const coversData = coversRes.data;
+      const coverMap: Record<string, string> = {};
+      if (Array.isArray(coversData)) {
+        coversData.forEach((manga: any) => {
+          const coverRel = manga.relationships.find((r: any) => r.type === 'cover_art');
+          if (coverRel?.attributes?.fileName) {
+            coverMap[manga.id] = coverRel.attributes.fileName;
+          }
         });
+      }
+      return finalChapters.map(chapter => {
+        const mangaRel = chapter.relationships.find((r: any) => r.type === 'manga');
+        return { ...chapter, coverFileName: coverMap[mangaRel.id] || null };
+      });
     }
     return finalChapters;
   } catch (e) {
@@ -237,80 +237,80 @@ export const getLatestChapters = async (limit = 24, page = 1) => {
 export const searchPeople = async (name: string) => {
   const targetUrl = new URL(`${API_BASE}/author`);
   targetUrl.searchParams.append('name', name);
-  targetUrl.searchParams.append('limit', '10'); 
+  targetUrl.searchParams.append('limit', '10');
   const res = await fetchDirect(targetUrl, { cache: 'no-store' });
-  return res.data; 
+  return res.data;
 };
 
 export const getAuthorsByIds = async (ids: string[]) => {
   if (ids.length === 0) return [];
   const targetUrl = new URL(`${API_BASE}/author`);
   ids.forEach(id => targetUrl.searchParams.append('ids[]', id));
-  targetUrl.searchParams.append('limit', '100'); 
-  const res = await fetchDirect(targetUrl, { next: { revalidate: 86400 } }); 
-  return res.data; 
+  targetUrl.searchParams.append('limit', '100');
+  const res = await fetchDirect(targetUrl, { next: { revalidate: 86400 } });
+  return res.data;
 };
 
 export const getMangaDetail = async (id: string) => {
   const targetUrl = new URL(`${API_BASE}/manga/${id}`);
   ['cover_art', 'author', 'artist'].forEach(i => targetUrl.searchParams.append('includes[]', i));
-  
+
   try {
     const isServer = typeof window === 'undefined';
     const headers: Record<string, string> = {};
     if (isServer) headers['User-Agent'] = 'MavManga-App/1.0.0';
 
     const res = await fetch(targetUrl.toString(), {
-        headers: headers,
-        next: { revalidate: 86400 } 
+      headers: headers,
+      next: { revalidate: 86400 }
     });
 
     if (!res.ok) {
-        throw new Error(`Failed detail: ${res.status}`);
+      throw new Error(`Failed detail: ${res.status}`);
     }
 
     const json = await res.json();
-    return json.data; 
-  } catch (e) { 
-      throw e; 
+    return json.data;
+  } catch (e) {
+    throw e;
   }
 };
 
 export const getMangaFeed = async (
-    id: string, 
-    offset: number = 0, 
-    order: 'asc' | 'desc' = 'desc', 
-    limit: number = 100
+  id: string,
+  offset: number = 0,
+  order: 'asc' | 'desc' = 'desc',
+  limit: number = 100
 ) => {
   const targetUrl = new URL(`${API_BASE}/manga/${id}/feed`);
-  targetUrl.searchParams.append('limit', limit.toString()); 
+  targetUrl.searchParams.append('limit', limit.toString());
   targetUrl.searchParams.append('offset', offset.toString());
-  targetUrl.searchParams.append('order[volume]', order); 
+  targetUrl.searchParams.append('order[volume]', order);
   targetUrl.searchParams.append('order[chapter]', order);
   ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => targetUrl.searchParams.append('contentRating[]', r));
   ['scanlation_group', 'user'].forEach(i => targetUrl.searchParams.append('includes[]', i));
-  
+
   try {
-      const res = await fetchDirect(targetUrl, { next: { revalidate: 3600 } });
-      return { data: res.data || [], total: res.total || 0 };
+    const res = await fetchDirect(targetUrl, { next: { revalidate: 3600 } });
+    return { data: res.data || [], total: res.total || 0 };
   } catch (e) {
-      return { data: [], total: 0 };
+    return { data: [], total: 0 };
   }
 };
 
 export const getChapterPages = async (chapterId: string) => {
   try {
     const targetUrl = new URL(`${API_BASE}/at-home/server/${chapterId}`);
-    targetUrl.searchParams.append('forcePort443', 'true'); 
-    
+    targetUrl.searchParams.append('forcePort443', 'true');
+
     const headers: Record<string, string> = {};
     if (typeof window === 'undefined') headers['User-Agent'] = 'MavManga-App/1.0.0';
 
-    const response = await fetch(targetUrl.toString(), { 
-        headers: headers,
-        cache: 'no-store' 
+    const response = await fetch(targetUrl.toString(), {
+      headers: headers,
+      cache: 'no-store'
     });
-    
+
     if (!response.ok) throw new Error(`Error Reader: ${response.status}`);
     return await response.json();
   } catch (error) { return null; }
@@ -320,11 +320,11 @@ export const getMangaTags = async () => {
   const targetUrl = new URL(`${API_BASE}/manga/tag`);
   const isServer = typeof window === 'undefined';
   const options = isServer ? { next: { revalidate: 86400 } } : { cache: 'no-store' as RequestCache };
-  
+
   try {
     const res = await fetchDirect(targetUrl, options);
-    return res.data; 
-  } catch(e) { return []; }
+    return res.data;
+  } catch (e) { return []; }
 };
 
 export const getMangaCovers = async (mangaId: string) => {
@@ -333,9 +333,9 @@ export const getMangaCovers = async (mangaId: string) => {
     const headers: Record<string, string> = {};
     if (isServer) headers['User-Agent'] = 'MavManga-App/1.0.0';
 
-    const res = await fetch(`https://api.mangadex.org/cover?manga[]=${mangaId}&limit=100&order[volume]=asc`, { 
-        headers: headers,
-        next: { revalidate: 86400 }
+    const res = await fetch(`https://api.mangadex.org/cover?manga[]=${mangaId}&limit=100&order[volume]=asc`, {
+      headers: headers,
+      next: { revalidate: 86400 }
     });
     if (!res.ok) throw new Error("Failed covers");
     const data = await res.json();
@@ -346,49 +346,49 @@ export const getMangaCovers = async (mangaId: string) => {
 };
 
 export const getMangaRecommendations = async (
-    title: string, tagIds: string[], demographic?: string | null, currentId?: string
+  title: string, tagIds: string[], demographic?: string | null, currentId?: string
 ) => {
-    try {
-        const results = new Map();
-        const appendBaseParams = (url: URL) => {
-            url.searchParams.append('limit', '25');
-            url.searchParams.append('includes[]', 'cover_art');
-            url.searchParams.append('includes[]', 'author');
-            url.searchParams.append('hasAvailableChapters', 'true');
-            if (demographic) url.searchParams.append('publicationDemographic[]', demographic);
-            ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => url.searchParams.append('contentRating[]', r));
-        };
+  try {
+    const results = new Map();
+    const appendBaseParams = (url: URL) => {
+      url.searchParams.append('limit', '25');
+      url.searchParams.append('includes[]', 'cover_art');
+      url.searchParams.append('includes[]', 'author');
+      url.searchParams.append('hasAvailableChapters', 'true');
+      if (demographic) url.searchParams.append('publicationDemographic[]', demographic);
+      ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => url.searchParams.append('contentRating[]', r));
+    };
 
-        const cacheOptions = { next: { revalidate: 86400 } };
+    const cacheOptions = { next: { revalidate: 86400 } };
 
-        if (title) {
-            const urlTitle = new URL(`${API_BASE}/manga`);
-            const cleanTitle = title.replace(/[^\w\s]/gi, '').trim(); 
-            urlTitle.searchParams.append('title', cleanTitle);
-            urlTitle.searchParams.append('order[relevance]', 'desc');
-            appendBaseParams(urlTitle);
-            try {
-                const resTitle = await fetchDirect(urlTitle, cacheOptions);
-                if (resTitle.data && Array.isArray(resTitle.data)) {
-                    resTitle.data.forEach((m: any) => { if (m.id !== currentId) results.set(m.id, m); });
-                }
-            } catch (e) {}
+    if (title) {
+      const urlTitle = new URL(`${API_BASE}/manga`);
+      const cleanTitle = title.replace(/[^\w\s]/gi, '').trim();
+      urlTitle.searchParams.append('title', cleanTitle);
+      urlTitle.searchParams.append('order[relevance]', 'desc');
+      appendBaseParams(urlTitle);
+      try {
+        const resTitle = await fetchDirect(urlTitle, cacheOptions);
+        if (resTitle.data && Array.isArray(resTitle.data)) {
+          resTitle.data.forEach((m: any) => { if (m.id !== currentId) results.set(m.id, m); });
         }
-
-        if (results.size < 12 && tagIds && tagIds.length > 0) {
-            const urlTags = new URL(`${API_BASE}/manga`);
-            tagIds.slice(0, 5).forEach(tag => urlTags.searchParams.append('includedTags[]', tag));
-            urlTags.searchParams.append('order[relevance]', 'desc');
-            appendBaseParams(urlTags);
-            try {
-                const resTags = await fetchDirect(urlTags, cacheOptions);
-                if (resTags.data && Array.isArray(resTags.data)) {
-                    resTags.data.forEach((m: any) => { if (m.id !== currentId) results.set(m.id, m); });
-                }
-            } catch (e) {}
-        }
-        return Array.from(results.values());
-    } catch (error) {
-        return [];
+      } catch (e) { }
     }
+
+    if (results.size < 12 && tagIds && tagIds.length > 0) {
+      const urlTags = new URL(`${API_BASE}/manga`);
+      tagIds.slice(0, 5).forEach(tag => urlTags.searchParams.append('includedTags[]', tag));
+      urlTags.searchParams.append('order[relevance]', 'desc');
+      appendBaseParams(urlTags);
+      try {
+        const resTags = await fetchDirect(urlTags, cacheOptions);
+        if (resTags.data && Array.isArray(resTags.data)) {
+          resTags.data.forEach((m: any) => { if (m.id !== currentId) results.set(m.id, m); });
+        }
+      } catch (e) { }
+    }
+    return Array.from(results.values());
+  } catch (error) {
+    return [];
+  }
 };
