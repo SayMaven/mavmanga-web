@@ -6,58 +6,38 @@ import LibraryButton from "./LibraryButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-// Helper: Cari Judul (Revised Logic)
 const getPreferredTitle = (attr: any) => {
-    const ogLang = attr.originalLanguage; // 'ja', 'zh', 'ko', etc.
+    const ogLang = attr.originalLanguage; 
     const altTitles = attr.altTitles || [];
-
-    // Fungsi bantu untuk mencari judul berdasarkan kode bahasa
-    // Prioritas: Cek di attr.title (judul utama di MD), lalu cek di altTitles
     const findTitle = (lang: string) => {
         return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
     };
 
-    // Fallback darurat: Ambil judul apapun yang tersedia di object title
     const fallbackTitle = Object.values(attr.title)[0] as string;
-
     let mainTitle = "";
     let subTitle = "";
 
     if (ogLang === 'ja') {
-        // --- LOGIC MANGA JEPANG ---
-        // Main: Romaji -> English -> Kanji -> Fallback
         mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
-        // Sub: Kanji (Jepang Asli)
         subTitle = findTitle('ja') || "";
     } else {
-        // --- LOGIC MANGA LUAR JEPANG (Manhwa, Manhua, dll) ---
-        // Main: English -> Romaji (misal ko-ro) -> Bahasa Asli -> Fallback
         mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
-        // Sub: Bahasa Asli (misal Hangul/Hanzi)
         subTitle = findTitle(ogLang) || "";
     }
 
-    // PEMBERSIHAN AKHIR:
-    // Jika Main Title dan Sub Title isinya sama persis, kosongkan sub title
-    // Atau jika Sub Title kosong, coba cari alternatif lain agar tampilan tidak sepi
     if (!subTitle || mainTitle === subTitle) {
-        // Jika judul utama adalah Inggris, coba tampilkan Romaji sebagai sub
         if (mainTitle === findTitle('en')) {
             subTitle = findTitle(`${ogLang}-ro`) || "";
         } 
-        // Jika judul utama BUKAN Inggris, coba tampilkan Inggris sebagai sub
         else {
             subTitle = findTitle('en') || "";
         }
-        
-        // Cek lagi, kalau masih sama, kosongkan saja
         if (mainTitle === subTitle) subTitle = "";
     }
 
     return { mainTitle, subTitle };
 };
 
-// Kita hapus prop 'chapters' karena sudah tidak dibutuhkan logic lokalnya
 export default function MangaHero({ 
     manga, 
     firstChapterId,
@@ -76,13 +56,11 @@ export default function MangaHero({
 
   const author = manga.relationships.find((r: any) => r.type === 'author')?.attributes?.name || "Unknown";
   const artist = manga.relationships.find((r: any) => r.type === 'artist')?.attributes?.name || "Unknown";
-
   const genres = attr.tags.filter((t:any) => t.attributes.group === 'genre');
   const themes = attr.tags.filter((t:any) => t.attributes.group === 'theme');
   const formats = attr.tags.filter((t:any) => t.attributes.group === 'format'); 
   const contentRating = attr.contentRating || 'safe';
 
-  // Handler simpan history saat klik
   const handleStartReading = () => {
       if (firstChapterId) {
           try {
@@ -98,35 +76,27 @@ export default function MangaHero({
 
   return (
     <div className="relative mb-8">
-        {/* Background Banner */}
         <div className="absolute inset-0 h-[500px] overflow-hidden z-0">
            <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/80 to-[#121212]/40 z-10" />
-           {/* eslint-disable-next-line @next/next/no-img-element */}
            <img src={coverUrl} referrerPolicy="no-referrer" className="w-full h-full object-cover object-[50%_25%] opacity-50 blur-[4px]" alt="Banner" />
         </div>
 
         <div className="relative z-20 container mx-auto px-4 md:px-6 pt-10">
            <div className="flex flex-col md:flex-row gap-8 items-start">
-              
-              {/* Floating Cover */}
               <div className="flex-shrink-0 mx-auto md:mx-0 relative group">
                   <div className="w-[200px] md:w-[240px] aspect-[2/3] rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden border border-white/20 transition-transform group-hover:scale-[1.02]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={coverUrl} className="w-full h-full object-cover" alt={mainTitle} />
                   </div>
               </div>
 
-              {/* Info Section */}
               <div className="flex-1 flex flex-col pt-2 min-w-0">
                   <h1 className="text-3xl md:text-5xl font-black text-white leading-tight drop-shadow-lg mb-2">{mainTitle}</h1>
                   {subTitle && <p className="text-lg text-gray-300 mb-2 font-medium opacity-80">{subTitle}</p>}
-
                   <div className="text-base font-bold text-gray-300 mb-6 flex flex-wrap gap-4">
                       <div className="flex gap-1"><span className="text-orange-500">Author:</span> {author}</div>
                       <div className="flex gap-1"><span className="text-orange-500">Artist:</span> {artist}</div>
                   </div>
 
-                  {/* Buttons */}
                   <div className="flex flex-wrap gap-3 mb-6">
                       {firstChapterId ? (
                           <Link 
@@ -145,7 +115,6 @@ export default function MangaHero({
                       <LibraryButton manga={manga} />
                   </div>
 
-                  {/* TAGS */}
                   <div className="flex flex-wrap items-center gap-y-2 gap-x-1.5 mb-6 text-[10px] font-bold uppercase leading-none">
                       <span className={`px-2 py-1 rounded text-white border border-transparent
                           ${contentRating === 'erotica' || contentRating === 'pornographic' ? 'bg-red-600' : 
@@ -178,7 +147,6 @@ export default function MangaHero({
                       </div>
                   </div>
 
-                  {/* MARKDOWN DESCRIPTION */}
                   <div className="text-sm text-gray-300 leading-relaxed description-markdown">
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm]}

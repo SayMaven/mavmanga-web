@@ -36,8 +36,6 @@ export default function ReaderSettings({ fitMode, setFitMode }: ReaderSettingsPr
                     ))}
                 </div>
             </div>
-            
-            {/* Bisa tambah setting lain disini (Reading Direction, Theme, dll) */}
         </div>
     );
 }

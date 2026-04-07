@@ -16,17 +16,14 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
 
   return (
     <div className="w-full">
-      
-      {/* --- TAB NAVIGATION --- */}
-      {/* Container Navigasi dengan Border Bawah Abu-abu Terang */}
       <div className="flex items-center gap-8 border-b border-white/20 mb-6 relative">
         
         <button
           onClick={() => setActiveTab('chapters')}
           className={`pb-3 text-sm font-bold border-b-[3px] transition-colors relative top-[2px] ${
             activeTab === 'chapters' 
-              ? 'border-[#FF6740] text-white'  // Aktif: Border Oranye & Teks Putih
-              : 'border-transparent text-gray-400 hover:text-white' // Tidak Aktif
+              ? 'border-[#FF6740] text-white'  
+              : 'border-transparent text-gray-400 hover:text-white' 
           }`}
         >
           Chapters
@@ -41,7 +38,6 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
           }`}
         >
           Art 
-          {/* Badge Counter */}
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === 'art' ? 'bg-white text-black' : 'bg-[#32353b] text-gray-300'}`}>
             {covers.length}
           </span>
@@ -58,8 +54,6 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
           Recommendations
         </button>
       </div>
-
-      {/* --- TAB CONTENT --- */}
       
       {/* 1. CHAPTERS TAB */}
       <div className={activeTab === 'chapters' ? 'block' : 'hidden'}>
@@ -74,7 +68,6 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
             ) : (
                 covers.map((cover) => (
                     <div key={cover.id} className="group relative aspect-[2/3] rounded-md overflow-hidden bg-[#232529] border border-[#32353b] shadow-lg">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                             src={`https://uploads.mangadex.org/covers/${mangaId}/${cover.attributes.fileName}.256.jpg`} 
                             alt={cover.attributes.volume || "Cover"}
@@ -97,7 +90,6 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
       {activeTab === 'recommendations' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 animate-in fade-in zoom-in-95 duration-300">
             {recommendations.length === 0 ? (
-                // UPDATE: Hapus border dan background, hanya text simple
                 <div className="col-span-full text-center py-20 text-gray-500 italic">
                     No recommendations found.
                 </div>
@@ -111,7 +103,6 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
 
                     return (
                         <Link key={manga.id} href={`/manga/${manga.id}`} className="group relative aspect-[2/3] rounded-md overflow-hidden bg-[#232529] border border-[#32353b] shadow-md hover:shadow-orange-500/40 transition hover:-translate-y-1">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img 
                                 src={coverImg} 
                                 alt={title as string}

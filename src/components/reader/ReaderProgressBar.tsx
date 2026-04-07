@@ -19,24 +19,17 @@ export default function ReaderProgressBar({
 }: ReaderProgressBarProps) {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-    // 1. Buat array index halaman
     let indices = Array.from({ length: totalImages }, (_, i) => i);
-
-    // 2. Jika RTL (Right to Left), balik urutan visualnya
-    // Agar bar paling kanan = halaman 1
     if (readingDirection === 'rtl') {
         indices = indices.reverse();
     }
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[70] px-4 pb-1 pt-6 flex items-end justify-center gap-3 group transition-all duration-300 hover:pb-3 cursor-default">
-            
-            {/* Indikator Halaman Saat Ini (Kiri) */}
             <span className="text-white font-bold text-xs mb-[1px] shadow-black drop-shadow-md select-none w-6 text-right opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 {currentIndex + 1}
             </span>
 
-            {/* Container Bar */}
             <div className="flex-1 flex items-end h-1 group-hover:h-3 transition-all duration-200 ease-out gap-[1px]">
                 {indices.map((pageIndex) => {
                     const isActive = pageIndex <= currentIndex;
@@ -45,7 +38,6 @@ export default function ReaderProgressBar({
                     return (
                         <div
                             key={pageIndex}
-                            // Style per segmen
                             className={`relative flex-1 h-full first:rounded-l-full last:rounded-r-full cursor-pointer transition-colors duration-150
                                 ${isHovered ? 'bg-white' : isActive ? 'bg-[#FF6740]' : 'bg-[#4a4a4a]'}
                             `}
@@ -56,7 +48,6 @@ export default function ReaderProgressBar({
                                 onPageChange(pageIndex);
                             }}
                         >
-                            {/* TOOLTIP (Bubble) */}
                             {isHovered && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 pointer-events-none z-[80] opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex flex-col items-center">
                                     <div 
@@ -73,7 +64,6 @@ export default function ReaderProgressBar({
                 })}
             </div>
 
-            {/* Total Halaman (Kanan) */}
             <span className="text-gray-400 font-bold text-xs mb-[1px] shadow-black drop-shadow-md select-none w-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 {totalImages}
             </span>

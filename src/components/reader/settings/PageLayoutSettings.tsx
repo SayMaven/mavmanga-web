@@ -19,7 +19,6 @@ export default function PageLayoutSettings({ config, updateConfig }: PageLayoutS
             className={`flex-1 py-2 px-1 text-[10px] sm:text-xs font-medium rounded flex flex-col items-center justify-center gap-1 transition
                 ${active ? 'bg-[#4a4d55] text-white shadow-md' : 'hover:bg-[#32353B] text-gray-400'}`}
         >
-            {/* Menggunakan flex center agar ikon SVG berada di tengah */}
             {icon && <span className="text-lg flex items-center justify-center">{icon}</span>}
             <span className="text-center leading-tight">{label}</span>
         </button>
@@ -38,7 +37,6 @@ export default function PageLayoutSettings({ config, updateConfig }: PageLayoutS
                         icon={<DocumentIcon className="w-5 h-5"/>} 
                     />
                     
-                    {/* 2. Gunakan BookOpenIcon disini */}
                     <SegmentButton 
                         active={config.pageStyle === 'double'} 
                         onClick={() => updateConfig('pageStyle', 'double')} 

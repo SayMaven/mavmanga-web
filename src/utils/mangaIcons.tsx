@@ -3,7 +3,7 @@
 export const getLinkInfo = (key: string, url: string) => {
   const k = key.toLowerCase();
   
-  // A. DATABASE STATIS (Untuk Key MangaDex yang sudah pasti domainnya)
+  // A. DATABASE STATIS 
   const staticMap: Record<string, { label: string, domain: string }> = {
     mal: { label: 'MyAnimeList', domain: 'myanimelist.net' },
     al: { label: 'AniList', domain: 'anilist.co' },
@@ -16,7 +16,6 @@ export const getLinkInfo = (key: string, url: string) => {
     cdj: { label: 'CDJapan', domain: 'cdjapan.co.jp' },
   };
 
-  // Jika Key ada di database statis, langsung return ikon dari domain tersebut
   if (staticMap[k]) {
     return { 
       label: staticMap[k].label, 
@@ -24,21 +23,15 @@ export const getLinkInfo = (key: string, url: string) => {
     };
   }
 
-  // B. EKSTRAKSI DINAMIS (Untuk 'raw', 'eng', atau link custom)
+  // B. EKSTRAKSI DINAMIS 
   let domain = '';
   let label = k.toUpperCase();
-
-  // Label default untuk key umum
   if (k === 'raw') label = 'Official Raw';
   if (k === 'eng' || k === 'engtl') label = 'Official Eng';
-
-  // Coba ambil domain dari URL asli
   if (url) {
     try {
       const urlObj = new URL(url);
       domain = urlObj.hostname;
-      
-      // Perbaiki Label berdasarkan nama domain agar lebih cantik
       if (domain.includes('pixiv')) label = 'Pixiv';
       else if (domain.includes('twitter') || domain.includes('x.com')) label = 'X (Twitter)';
       else if (domain.includes('patreon')) label = 'Patreon';
@@ -51,14 +44,11 @@ export const getLinkInfo = (key: string, url: string) => {
       else if (domain.includes('bilibili')) label = 'Bilibili';
       
     } catch (e) {
-       // URL tidak valid, biarkan domain kosong
     }
   }
 
-  // C. HASIL AKHIR
   return { 
     label, 
-    // Jika domain ketemu, minta favicon ke Google. Jika tidak, return null (nanti pakai fallback)
     iconSrc: domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null 
   };
 };

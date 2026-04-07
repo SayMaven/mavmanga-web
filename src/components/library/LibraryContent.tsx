@@ -8,16 +8,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 type ReadingStatus = 'reading' | 'on_hold' | 'dropped' | 'plan_to_read' | 'completed' | 're_reading';
-
-// --- HELPER: LOGIKA JUDUL (Sama dengan MangaHero) ---
 const getPreferredTitle = (manga: any) => {
-    // Cek struktur data. Di library biasanya tersimpan snapshot yang mungkin beda dikit strukturnya.
-    // Asumsi: 'manga' di sini adalah object yang disimpan di localStorage.
-    // Jika data localStorage kamu menyimpan atribut lengkap (seperti response API), kode ini jalan.
-    // Jika kamu hanya simpan { id, title: "String", cover: "Url" }, maka logic ini butuh penyesuaian.
-    // TAPI, melihat kode lama kamu: alt={manga.title || 'Manga'}, sepertinya kamu simpan title sebagai string simple.
-    
-    // JIKA DATA LIBRARY KAMU MENYIMPAN ATRIBUT LENGKAP (attributes):
     if (manga.attributes) {
         const attr = manga.attributes;
         const ogLang = attr.originalLanguage; 
@@ -27,24 +18,19 @@ const getPreferredTitle = (manga: any) => {
             return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
         };
 
-        // Fallback title (ambil value pertama dari object title)
         const fallbackTitle = (typeof attr.title === 'object') ? Object.values(attr.title)[0] as string : attr.title;
 
         let mainTitle = "";
 
         if (ogLang === 'ja') {
-            // Jepang: Romaji -> English -> Kanji -> Fallback
             mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
         } else {
-            // Luar Jepang: English -> Romaji -> Asli -> Fallback
             mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
         }
         
         return mainTitle || "Untitled";
     }
 
-    // JIKA DATA LIBRARY HANYA MENYIMPAN STRING TITLE SEDERHANA:
-    // Maka kembalikan saja title yang sudah tersimpan.
     return manga.title || "Untitled";
 };
 
@@ -53,7 +39,6 @@ export default function LibraryContent() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ReadingStatus | 'all'>('all');
 
-  // Load Library
   useEffect(() => {
     const savedData = localStorage.getItem('maven_library');
     if (savedData) {
@@ -69,7 +54,6 @@ export default function LibraryContent() {
     setLoading(false);
   }, []);
 
-  // Filter Logic
   const filteredLibrary = activeTab === 'all' 
     ? library 
     : library.filter(item => item.status === activeTab);
@@ -88,8 +72,6 @@ export default function LibraryContent() {
     <main className="min-h-screen bg-[#121212] text-white font-sans pb-20">
       
       <div className="container mx-auto px-4 md:px-8 max-w-[1600px] py-10">
-        
-        {/* HEADER & TABS */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 border-b border-white/10 pb-4">
             <div>
                 <h1 className="text-3xl font-black text-white flex items-center gap-3">
@@ -97,8 +79,6 @@ export default function LibraryContent() {
                 </h1>
                 <p className="text-gray-400 text-sm mt-1">Manage your reading list locally.</p>
             </div>
-
-            {/* STATUS TABS */}
             <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -131,7 +111,6 @@ export default function LibraryContent() {
             </div>
         </div>
 
-        {/* CONTENT GRID */}
         {loading ? (
             <div className="text-center py-20 text-gray-500 animate-pulse">Loading library data...</div>
         ) : filteredLibrary.length > 0 ? (
@@ -139,14 +118,12 @@ export default function LibraryContent() {
                 {filteredLibrary.map((manga) => {
                     const safeStatus = manga.status || 'unknown'; 
                     
-                    // Gunakan Helper Judul Baru
                     const displayTitle = getPreferredTitle(manga);
 
                     return (
                         <div key={manga.id} className="group relative">
                             <Link href={`/manga/${manga.id}`} className="block h-full">
                                 <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-lg border border-white/10 group-hover:border-orange-500/50 transition bg-[#191A1C]">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img 
                                         src={manga.cover || 'https://placehold.co/300x450/333/999?text=No+Cover'} 
                                         alt={displayTitle}

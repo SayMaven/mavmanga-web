@@ -21,28 +21,18 @@ const getFlagUrl = (lang: string) => {
   return `https://flagcdn.com/w40/${countryCode}.png`;
 };
 
-// --- LOGIC PEMILIHAN JUDUL (DIPERBARUI) ---
 const getDisplayTitles = (manga: any) => {
     const attr = manga.attributes;
     const ogLang = attr.originalLanguage;
     const altTitles = attr.altTitles || [];
-
-    // Helper pencari judul
     const findTitle = (lang: string) => {
         return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
     };
-
-    // Fallback Judul (Ambil yang pertama kali ketemu)
     const fallbackTitle = Object.values(attr.title)[0] as string || "No Title";
-
     let mainTitle = "";
-    
-    // LOGIC UTAMA
     if (ogLang === 'ja') {
-        // Manga Jepang: Prioritas Romaji -> Inggris -> Kanji
         mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
     } else {
-        // Manga Luar (Manhwa/Manhua/dll): Prioritas Inggris -> Romaji -> Asli
         mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
     }
 
@@ -52,10 +42,7 @@ const getDisplayTitles = (manga: any) => {
 export default function MangaCard({ manga, large = false, className = "" }: { manga: any, large?: boolean, className?: string }) {
   const attr = manga.attributes;
   const originalLang = attr.originalLanguage;
-  
-  // GUNAKAN LOGIC BARU DI SINI
   const title = getDisplayTitles(manga);
-  
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
   const fileName = coverRel?.attributes?.fileName;
   const imageUrl = fileName 
@@ -88,8 +75,6 @@ export default function MangaCard({ manga, large = false, className = "" }: { ma
   return (
     <div className={`relative group w-full ${className}`}>
       <Link href={`/manga/${manga.id}`} className="block relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-md group-hover:shadow-orange-500/40 transition-all duration-300 bg-[#1e1e1e]">
-        
-        {/* GAMBAR */}
         <img 
           src={imageUrl} 
           alt={title} 
@@ -98,10 +83,7 @@ export default function MangaCard({ manga, large = false, className = "" }: { ma
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
         />
 
-        {/* OVERLAY GRADIENT UTAMA */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity" />
-
-        {/* --- BADGES (KIRI ATAS) --- */}
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5 z-10">
             <span className={`${getRatingBadge(rating)} text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider backdrop-blur-md bg-opacity-90`}>
                 {rating === 'pornographic' ? '18+' : rating}
@@ -114,15 +96,12 @@ export default function MangaCard({ manga, large = false, className = "" }: { ma
             )}
         </div>
 
-        {/* --- INFO (JUDUL & BENDERA) --- */}
         <div className="absolute bottom-0 left-0 w-full p-3 z-10 bg-gradient-to-t from-black via-black/60 to-transparent pt-10 rounded-b-lg">
             <div className="flex flex-col gap-2">
-                {/* JUDUL */}
                 <h3 className="text-white font-bold text-sm leading-tight break-words group-hover:text-orange-400 transition-colors drop-shadow-md line-clamp-2">
                   {title}
                 </h3>
-                
-                {/* BENDERA */}
+
                 <div className="flex justify-end">
                     <img 
                         src={getFlagUrl(originalLang)} 

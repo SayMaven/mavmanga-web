@@ -26,8 +26,6 @@ interface ReaderSidebarProps {
     onNextPage: () => void;
     scanlationGroup: string;
     uploaderName?: string;
-
-    // --- PROP BARU UNTUK HANDLE WEBTOON LOCK ---
     isWebtoonMode?: boolean;
 }
 
@@ -50,13 +48,12 @@ export default function ReaderSidebar({
     onNextPage,
     scanlationGroup,
     uploaderName = "Unknown User",
-    isWebtoonMode = false // Default false
+    isWebtoonMode = false 
 }: ReaderSidebarProps) {
     
     const [openDropdown, setOpenDropdown] = useState<'page' | 'chapter' | null>(null);
     const sidebarRef = useRef<HTMLDivElement>(null);
 
-    // --- DATA PROCESSING ---
     const { relevantChapters, groupedChapters, sortedVolumes } = useMemo(() => {
         const currentLang = currentChapter?.translatedLanguage || 'en';
         const relevant = chapterList
@@ -107,7 +104,6 @@ export default function ReaderSidebar({
 
     const handleScrollPropagation = (e: React.WheelEvent) => e.stopPropagation();
 
-    // Helper: Toggle Fit Mode
     const toggleFit = () => {
         const isHeightMode = config.imageSizing.containHeight;
         setConfig({
@@ -121,9 +117,7 @@ export default function ReaderSidebar({
         });
     };
 
-    // Helper: Cycle Page Style
     const cyclePageStyle = () => {
-        // --- FIX: cegah ganti style jika sedang di Webtoon Mode ---
         if (isWebtoonMode) return;
 
         const modes: PageStyle[] = ['single', 'double', 'long-strip', 'wide-strip'];
@@ -132,9 +126,7 @@ export default function ReaderSidebar({
         setConfig({ ...config, pageStyle: modes[nextIndex] });
     };
 
-    // Helper: Get Label for current style
     const getPageStyleLabel = () => {
-        // --- FIX: Tampilkan label khusus ---
         if (isWebtoonMode) return "Webtoon Mode";
 
         switch(config.pageStyle) {
@@ -160,7 +152,7 @@ export default function ReaderSidebar({
                 onWheel={handleScrollPropagation}
                 className={`fixed top-0 right-0 h-full w-[320px] bg-[#191A1C] border-l border-[#2f3136] z-[100] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
             >
-                {/* HEADER */}
+
                 <div className="flex items-start justify-between p-4 pb-2">
                     <button onClick={onClose} className="text-gray-400 hover:text-white">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -170,7 +162,6 @@ export default function ReaderSidebar({
                     </button>
                 </div>
 
-                {/* INFO MANGA */}
                 <div className="px-4 pb-4">
                      <div className="flex items-start gap-3 mb-1">
                         <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
@@ -188,8 +179,6 @@ export default function ReaderSidebar({
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-4 space-y-3 custom-scrollbar">
-                    
-                    {/* NAV ROW (Page) */}
                     <div className="flex items-center gap-2 relative z-20">
                         <button onClick={onPrevPage} className="w-10 h-10 flex items-center justify-center bg-[#232529] hover:bg-[#32353B] rounded text-gray-400 hover:text-white transition">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -213,7 +202,6 @@ export default function ReaderSidebar({
                         </button>
                     </div>
 
-                    {/* NAV ROW (Chapter) */}
                     <div className="flex items-center gap-2 relative z-10">
                         <button onClick={() => prevChapterId && onChapterChange(prevChapterId)} disabled={!prevChapterId} className={`w-10 h-10 flex items-center justify-center bg-[#232529] rounded transition ${!prevChapterId ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:bg-[#32353B] hover:text-white'}`}>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -250,8 +238,6 @@ export default function ReaderSidebar({
                     </div>
 
                     <div className="border-t border-[#2f3136] my-2" />
-
-                    {/* UPLOADED BY */}
                     <div className="pb-2">
                         <h4 className="text-gray-400 text-xs font-bold mb-2 uppercase">Uploaded By</h4>
                         <div className="flex items-center gap-2 mb-2">
@@ -269,14 +255,10 @@ export default function ReaderSidebar({
                     </div>
 
                     <div className="border-t border-[#2f3136] my-2" />
-
-                    {/* SHORTCUT SETTINGS */}
                     <div className="space-y-1">
-                        
-                        {/* 1. BUTTON CYCLE PAGE STYLE (LOCKED IF WEBTOON) */}
                         <button 
                             onClick={cyclePageStyle} 
-                            disabled={isWebtoonMode} // Disable jika Webtoon
+                            disabled={isWebtoonMode} 
                             className={`w-full h-10 rounded flex items-center px-3 text-sm transition gap-3 select-none
                                 ${isWebtoonMode 
                                     ? 'bg-[#2f3136] text-gray-500 cursor-not-allowed border border-red-900/30' 

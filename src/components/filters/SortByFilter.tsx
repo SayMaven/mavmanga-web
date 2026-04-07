@@ -41,7 +41,7 @@ export default function SortByFilter({ selectedSort, onChange }: SortByFilterPro
 
     const handleSelect = (value: string) => {
         onChange(value);
-        setIsOpen(false); // Tutup dropdown otomatis setelah milih
+        setIsOpen(false); 
     };
 
     const currentLabel = SORT_OPTIONS.find(o => o.value === selectedSort)?.label || 'None';

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { getLinkInfo } from "@/utils/mangaIcons";
 import { getMangaRecommendations } from "@/services/mangadex";
 
-// Helper: Flag URL
 const getFlagUrl = (lang: string) => {
   if (!lang) return null;
   const map: Record<string, string> = {
@@ -24,7 +23,6 @@ const getFlagUrl = (lang: string) => {
   return code ? `https://flagcdn.com/w40/${code}.png` : null;
 };
 
-// Helper: Priority Sort untuk Alternative Titles
 const getLangPriority = (lang: string) => {
     if (lang === 'en') return 1;
     if (lang === 'ja') return 2;
@@ -32,22 +30,16 @@ const getLangPriority = (lang: string) => {
     return 100;
 };
 
-// --- COMPONENT CONTENT ---
 export default async function MangaSidebarContent({ manga }: { manga: any }) {
   const attr = manga.attributes || {};
   const tags = attr.tags || [];
-  
-  // Filter Tags
+
   const genres = tags.filter((t:any) => t.attributes.group === 'genre');
   const themes = tags.filter((t:any) => t.attributes.group === 'theme');
   const formats = tags.filter((t:any) => t.attributes.group === 'format');
-  
   const author = manga.relationships.find((r: any) => r.type === 'author')?.attributes?.name;
   const artist = manga.relationships.find((r: any) => r.type === 'artist')?.attributes?.name;
-  
   const altTitles = attr.altTitles || [];
-
-  // LOGIKA SORTING ALTERNATIVE TITLES
   const sortedAltTitles = [...altTitles].sort((a: any, b: any) => {
       const langA = Object.keys(a)[0];
       const langB = Object.keys(b)[0];
@@ -61,23 +53,14 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
   const trackLinks = linkKeys.filter(k => trackKeys.includes(k));
   const retailLinks = linkKeys.filter(k => retailKeys.includes(k) || !trackKeys.includes(k)); 
 
-  // --- LOGIC REKOMENDASI BARU (HYBRID: TITLE + GENRE + DEMOGRAPHIC) ---
-  
-  // 1. Ambil Judul Utama
-  const mainTitle = attr.title?.en || Object.values(attr.title || {})[0] || "";
 
-  // 2. Ambil Tags ID
+  const mainTitle = attr.title?.en || Object.values(attr.title || {})[0] || "";
   const recommendationTags = tags
     .filter((t: any) => t.attributes.group === 'genre' || t.attributes.group === 'theme')
     .map((t: any) => t.id);
-
-  // 3. Ambil Demographic
   const demographic = attr.publicationDemographic;
-
-  // 4. Panggil service: Title + Tags + Demographic + CurrentID
   let recommendations = await getMangaRecommendations(mainTitle as string, recommendationTags, demographic, manga.id);
-  
-  // Batasi jumlah tampilan di sidebar
+
   recommendations = recommendations.slice(0, 6);
 
   const LinkButton = ({ linkKey, url }: { linkKey: string, url: string }) => {
@@ -88,7 +71,6 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
           >
               <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-white/5 rounded-sm p-0.5 group-hover:bg-white/10 transition">
                   {info.iconSrc ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={info.iconSrc} alt={info.label} className="w-full h-full object-contain" />
                   ) : (
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4 text-gray-400">
@@ -224,7 +206,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
             </div>
         )}
 
-        {/* 8. RECOMMENDATIONS (Hybrid: Title + Tags + Demographic) */}
+        {/* 8. RECOMMENDATIONS */}
         {recommendations.length > 0 && (
             <div className="space-y-3 pt-6 border-t border-white/5">
                 <h3 className="text-white font-bold text-sm mb-3">Recommendations</h3>
@@ -238,7 +220,6 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
 
                          return (
                             <Link key={rec.id} href={`/manga/${rec.id}`} className="group relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-white/5 bg-[#232529]">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={recImage} referrerPolicy="no-referrer" alt={recTitle} className="w-full h-full object-cover transition duration-300 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
                                 <div className="absolute bottom-0 left-0 right-0 p-2">

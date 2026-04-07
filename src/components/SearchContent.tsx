@@ -11,7 +11,7 @@ import StatusFilter from './filters/StatusFilter';
 import AuthorFilter from './filters/AuthorFilter';
 import ArtistFilter from './filters/ArtistFilter';
 import TagFilter from './filters/TagFilter';
-import TranslatedLanguageFilter from './filters/TranslatedLanguageFilter'; // <--- 1. IMPORT BARU
+import TranslatedLanguageFilter from './filters/TranslatedLanguageFilter'; 
 import Pagination from './Pagination';
 import SortByFilter from './filters/SortByFilter';
 import DemographicFilter from './filters/DemographicFilter';
@@ -30,11 +30,8 @@ export default function SearchContent({
 
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [showFilters, setShowFilters] = useState(true);
-
-  // --- FILTER STATES ---
   const [query, setQuery] = useState(searchParams.get('q') || "");
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'none');
-
   const [status, setStatus] = useState<string[]>(() => {
     const s = searchParams.get('status');
     return (s && s !== 'any') ? s.split(',') : [];
@@ -45,24 +42,20 @@ export default function SearchContent({
     return (r && r !== 'any') ? r.split(',') : [];
   });
 
-  // Original Language
   const [lang, setLang] = useState<string[]>(() => {
     const l = searchParams.get('language');
     return (l && l !== 'any') ? l.split(',') : [];
   });
 
-  // --- 2. NEW STATES FOR TRANSLATED CHAPTERS ---
   const [hasTranslatedChapters, setHasTranslatedChapters] = useState(() => {
-    // Default true jika tidak ada params, atau baca dari URL
     const param = searchParams.get('hasAvailableChapters');
-    return param === 'true' || param === null; // Default enable jika fresh load
+    return param === 'true' || param === null; 
   });
 
   const [translatedLangs, setTranslatedLangs] = useState<string[]>(() => {
     const l = searchParams.get('availableTranslatedLanguage');
     return l ? l.split(',') : [];
   });
-  // ---------------------------------------------
 
   const [authors, setAuthors] = useState<string[]>(() => {
     const a = searchParams.get('authors'); return (a && a !== '') ? a.split(',') : [];
@@ -94,14 +87,11 @@ export default function SearchContent({
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     if (sortBy && sortBy !== 'none') params.set('sortBy', sortBy);
-
     if (status.length > 0) params.set('status', status.join(','));
     if (rating.length > 0) params.set('rating', rating.join(','));
     if (lang.length > 0) params.set('language', lang.join(','));
     if (authors.length > 0) params.set('authors', authors.join(','));
     if (artists.length > 0) params.set('artists', artists.join(','));
-
-    // --- 3. PARAMETER TRANSLATED CHAPTERS ---
     if (hasTranslatedChapters) {
       params.set('hasAvailableChapters', 'true');
       if (translatedLangs.length > 0) {
@@ -110,7 +100,6 @@ export default function SearchContent({
     } else {
       params.set('hasAvailableChapters', 'false');
     }
-    // ----------------------------------------
 
     if (includedTags.length > 0) params.set('includedTags', includedTags.join(','));
     if (excludedTags.length > 0) params.set('excludedTags', excludedTags.join(','));
@@ -139,9 +128,7 @@ export default function SearchContent({
         Advanced Search
       </h1>
 
-      {/* SEARCH BAR SECTION */}
       <div className="bg-[#191A1C] p-4 rounded-lg mb-6 border border-white/5">
-        {/* ... (Search input code sama seperti sebelumnya) ... */}
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -226,7 +213,6 @@ export default function SearchContent({
                   setQuery(""); setSortBy("none"); setStatus([]); setDemo("any");
                   setRating([]); setLang([]); setAuthors([]); setArtists([]); setYear("");
                   setIncludedTags([]); setExcludedTags([]); setIncMode('AND'); setExcMode('OR');
-                  // Reset Translated
                   setHasTranslatedChapters(true);
                   setTranslatedLangs([]);
                 }}
@@ -243,7 +229,6 @@ export default function SearchContent({
         )}
       </div>
 
-      {/* RESULTS HEADER & LIST (Sama seperti sebelumnya) */}
       {initialResults.length > 0 && (
         <div className="flex justify-between items-center mb-6">
           <div className="text-gray-400 text-sm">

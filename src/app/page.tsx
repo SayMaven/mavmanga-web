@@ -24,23 +24,18 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-[#121212] text-white font-sans pb-10">
       
-      {/* 2. PASANG KOMPONEN DISINI (Akan muncul di atas segalanya) */}
       <ContentWarning />
-
-      {/* 1. HERO CAROUSEL */}
       <div className="w-full mb-14">
           <HeroCarousel mangaList={popular || []} />
       </div>
 
       <div className="container mx-auto px-4 md:px-8 max-w-[1600px] space-y-16">
         
-        {/* 2. LATEST UPDATES */}
         <section>
             <div className="flex items-center justify-between mb-6 px-1">
                 <h2 className="text-3xl font-bold text-white flex items-center gap-3">
                    Latest Updates
                 </h2>
-                {/* LINK AKTIF UNTUK LATEST UPDATES */}
                 <Link 
                     href="/manga/latest"
                     className="flex items-center gap-2 text-base text-gray-400 hover:text-white transition font-medium group"
@@ -51,7 +46,6 @@ export default async function Home() {
             </div>
             <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-4 gap-5">
                 {(latestChapters || []).map((chapter: any) => (
-                    // 2. Wrapper PENTING agar kartu tidak terpotong antar kolom
                     <div key={chapter.id} className="break-inside-avoid mb-5">
                         <LatestUpdateCard chapter={chapter} />
                     </div>
@@ -59,36 +53,32 @@ export default async function Home() {
             </div>
         </section>
 
-        {/* 3. RECOMMENDED */}
         <MangaSection 
             title="Recommended" 
             icon="" 
             data={recommended || []} 
             cardWidth="w-[180px] md:w-[250px]" 
-            viewAllHref="/search?sortBy=rating_high" // Link ke Top Rating
+            viewAllHref="/search?sortBy=rating_high" 
         />
 
-        {/* 4. SEASONAL */}
         <MangaSection 
             title="Seasonal: Winter 2026" 
             icon="" 
             data={seasonal || []} 
             cardWidth="w-[150px] md:w-[200px]"
-            viewAllHref="/search?sortBy=latest" // Link ke Most Follows
+            viewAllHref="/search?sortBy=latest" 
         />
 
-        {/* 5. RECENTLY ADDED */}
         <MangaSection 
             title="Recently Added" 
             icon="" 
             data={recent || []} 
             cardWidth="w-[120px] md:w-[150px]"
-            viewAllHref="/search?sortBy=created_new" // Link ke Newest Created
+            viewAllHref="/search?sortBy=created_new" 
         />
 
       </div>
 
-      {/* --- FOOTER SECTION --- */}
       <footer className="mt-32 border-t border-white/5 py-12 text-center">
         <div className="container mx-auto px-4">
             <p className="text-gray-500 text-sm flex items-center justify-center gap-1.5">
@@ -100,7 +90,6 @@ export default async function Home() {
                  className="text-[#FF6740] hover:text-[#ff8566] font-bold transition-colors flex items-center gap-1"
                >
                  MangaDex
-                 {/* Optional: Icon External Link kecil */}
                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                </a>
             </p>

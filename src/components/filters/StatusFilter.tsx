@@ -30,7 +30,6 @@ export default function StatusFilter({ selectedStatus, onChange }: StatusFilterP
   }, []);
 
   const toggleStatus = (value: string) => {
-    // Safety check: Pastikan selectedStatus adalah array sebelum di-filter
     const current = Array.isArray(selectedStatus) ? selectedStatus : [];
 
     if (current.includes(value)) {
@@ -41,7 +40,6 @@ export default function StatusFilter({ selectedStatus, onChange }: StatusFilterP
   };
 
   const getLabel = () => {
-    // SAFETY CHECK: Mencegah error .map is not a function
     if (!Array.isArray(selectedStatus) || selectedStatus.length === 0) return 'Any';
     
     return selectedStatus.map(s => STATUS_OPTIONS.find(o => o.value === s)?.label).join(', ');
@@ -62,7 +60,6 @@ export default function StatusFilter({ selectedStatus, onChange }: StatusFilterP
       {isOpen && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#232529] border border-[#3b3e44] rounded shadow-2xl overflow-hidden py-1">
           {STATUS_OPTIONS.map((opt) => {
-            // Safety Check di sini juga
             const isSelected = Array.isArray(selectedStatus) && selectedStatus.includes(opt.value);
             
             return (

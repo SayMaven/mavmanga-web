@@ -32,13 +32,13 @@ body {
     display: none;
 }
 .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none; 
+    scrollbar-width: none;  
 }
 
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px; /* Lebar scrollbar tipis */
+    width: 6px; 
     height: 6px;
   }
 
@@ -47,11 +47,11 @@ body {
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #32353B; /* Warna thumb gelap */
+    background-color: #32353B; 
     border-radius: 10px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #52555b; /* Sedikit lebih terang saat hover */
+    background-color: #52555b; 
   }
 }

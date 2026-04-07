@@ -1,7 +1,7 @@
 // src/components/MangaSection.tsx
 'use client';
 
-import Link from "next/link"; // Import Link
+import Link from "next/link"; 
 import MangaCard from "./MangaCard";
 import DraggableScroll from "./DraggableScroll";
 
@@ -10,7 +10,7 @@ export default function MangaSection({
   icon, 
   data, 
   cardWidth = "w-[160px] md:w-[200px]",
-  viewAllHref // Prop baru untuk link tujuan
+  viewAllHref 
 }: { 
   title: string, 
   icon: string, 
@@ -20,16 +20,11 @@ export default function MangaSection({
 }) {
   return (
     <section className="mb-12 md:mb-16">
-      {/* Header Container: Gunakan justify-between agar judul di kiri, panah di kanan */}
       <div className="flex items-center justify-between mb-6 px-2">
-        
-        {/* KIRI: Judul & Icon */}
         <div className="flex items-center gap-3">
             {icon && <span className="text-3xl md:text-4xl">{icon}</span>}
             <h2 className="text-2xl md:text-3xl font-black text-white tracking-wide">{title}</h2>
         </div>
-
-        {/* KANAN: Tombol View All (Panah) */}
         {viewAllHref && (
             <Link 
                 href={viewAllHref} 

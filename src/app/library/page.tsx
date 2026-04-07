@@ -4,7 +4,6 @@ import LibraryContent from '@/components/library/LibraryContent'; // Import komp
 
 export const metadata: Metadata = {
   title: "Library", 
-  // Hasil: "My Library | SayMaven"
 };
 
 export default function LibraryPage() {

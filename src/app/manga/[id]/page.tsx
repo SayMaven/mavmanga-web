@@ -1,5 +1,5 @@
 // src/app/manga/[id]/page.tsx
-import { Metadata } from "next"; // Import Metadata
+import { Metadata } from "next"; 
 import { getMangaDetail, getMangaFeed, getMangaCovers, getMangaRecommendations } from "@/services/mangadex";
 import MangaHero from "@/components/manga/MangaHero";
 import MangaSidebar from "@/components/manga/MangaSidebar";
@@ -7,7 +7,6 @@ import ChapterList from "@/components/manga/ChapterList";
 import MangaSidebarContent from "@/components/manga/MangaSidebarContent";
 import MangaTabs from "@/components/manga/MangaTabs";
 
-// --- 1. GENERATE METADATA (JUDUL TAB BAR) ---
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const manga = await getMangaDetail(id);
@@ -20,7 +19,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const ogLang = attr.originalLanguage;
   const altTitles = attr.altTitles || [];
 
-  // Helper pencari judul (Sama dengan logic di MangaCard/MangaHero)
   const findTitle = (lang: string) => {
       return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
   };
@@ -28,23 +26,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const fallbackTitle = Object.values(attr.title)[0] as string || "Manga Detail";
   let displayTitle = "";
 
-  // LOGIC JUDUL:
-  // 1. JEPANG: Prioritas Romaji -> Inggris -> Kanji
   if (ogLang === 'ja') {
       displayTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
   } 
-  // 2. LAINNYA (Manhwa/Manhua/dll): Prioritas Inggris -> Romaji -> Asli
   else {
       displayTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
   }
 
   return {
-    title: displayTitle, // Next.js akan otomatis menambahkan "| SayMaven" dari layout.tsx
+    title: displayTitle, 
     description: `Baca manga ${displayTitle} bahasa Indonesia gratis di SayMaven.`,
   };
 }
 
-// --- 2. MAIN PAGE COMPONENT ---
 export default async function MangaDetail({ 
     params, 
     searchParams 
@@ -60,11 +54,10 @@ export default async function MangaDetail({
   const limit = 100;
   const offset = (page - 1) * limit;
 
-  // --- FETCHING DATA ---
   const [manga, feedData, firstChapterFeed] = await Promise.all([
     getMangaDetail(id),
-    getMangaFeed(id, offset, order), // Data untuk List Chapter (Paginasi)
-    getMangaFeed(id, 0, 'asc')       // Data KHUSUS untuk tombol Start Reading
+    getMangaFeed(id, offset, order), 
+    getMangaFeed(id, 0, 'asc')       
   ]);
 
   const rawChapters = feedData.data;
@@ -72,7 +65,6 @@ export default async function MangaDetail({
 
   if (!manga || !manga.attributes) return <div className="text-white text-center p-20 font-bold text-xl">404: Manga Not Found</div>;
 
-  // --- LOGIKA START READING (GLOBAL) ---
   let startReadingId = null;
   
   if (firstChapterFeed.data && firstChapterFeed.data.length > 0) {
@@ -89,8 +81,6 @@ export default async function MangaDetail({
       startReadingId = idVersion?.id || enVersion?.id || firstChapterVersions[0]?.id;
   }
 
-  // --- LOGIKA REKOMENDASI ---
-  // Gunakan logika judul yang sama untuk parameter rekomendasi agar akurat
   const attr = manga.attributes;
   const ogLang = attr.originalLanguage;
   const altTitles = attr.altTitles || [];

@@ -5,17 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SearchInput from "./SearchInput";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react"; // Tambah useEffect & useRef
+import { useState, useEffect, useRef } from "react"; 
 import { BookmarkIcon } from '@heroicons/react/24/outline';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  
-  // Ref untuk input search container (opsional, untuk click outside)
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Reset search mode jika pindah halaman
   useEffect(() => {
     setIsMobileSearchOpen(false);
   }, [pathname]);
@@ -27,9 +24,6 @@ export default function Navbar() {
   return (
     <nav className="bg-[#191A1C]/95 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 max-w-[1600px] h-16 flex items-center justify-between gap-4 relative">
-          
-          {/* ================= BAGIAN KIRI: LOGO ================= */}
-          {/* Logo disembunyikan saat Mobile Search Aktif */}
           <Link 
             href="/" 
             className={`flex items-center gap-2 group flex-shrink-0 mr-auto transition-all duration-300
@@ -51,13 +45,9 @@ export default function Navbar() {
             </span>
           </Link>
 
-
-          {/* ================= BAGIAN KANAN ================= */}
           <div className={`flex items-center gap-3 md:gap-4 justify-end transition-all duration-300
               ${isMobileSearchOpen ? 'w-full absolute left-0 px-4 md:static md:w-auto md:px-0 bg-[#191A1C] md:bg-transparent h-full z-20' : 'flex-none'} 
           `}>
-
-              {/* 1. SEARCH INPUT WRAPPER */}
               <div 
                 ref={searchRef}
                 className={`
@@ -65,7 +55,6 @@ export default function Navbar() {
                  ${isMobileSearchOpen ? 'flex w-full items-center gap-3' : 'hidden md:block'}
               `}
               >
-                {/* Tombol Back Search (Mobile Only) */}
                 {isMobileSearchOpen && (
                     <button 
                         onClick={() => setIsMobileSearchOpen(false)}
@@ -77,15 +66,11 @@ export default function Navbar() {
                     </button>
                 )}
 
-                {/* PENTING: Kita kirim props 'autoFocus' ke SearchInput agar keyboard muncul.
-                    Pastikan SearchInput Anda menerima props ini (lihat langkah 2 di bawah).
-                */}
                 <div className="w-full">
                     <SearchInput autoFocus={isMobileSearchOpen} />
                 </div>
               </div>
 
-              {/* 2. TOMBOL TRIGGER SEARCH (Hanya muncul jika search tertutup di mobile) */}
               {!isMobileSearchOpen && (
                   <button 
                     onClick={() => setIsMobileSearchOpen(true)}
@@ -96,10 +81,7 @@ export default function Navbar() {
                     </svg>
                 </button>
               )}
-
-
-              {/* 3. ICON LIBRARY & USER */}
-              {/* Disembunyikan saat mobile search aktif agar input punya ruang full */}
+              
               <div className={`flex items-center gap-3 md:gap-4 ${isMobileSearchOpen ? 'hidden md:flex' : 'flex'}`}>
                 
                 <Link 

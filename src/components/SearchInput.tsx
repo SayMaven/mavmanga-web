@@ -20,14 +20,11 @@ export default function SearchInput({ autoFocus = false }: { autoFocus?: boolean
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [renderDropdown, setRenderDropdown] = useState(false);
-
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   const debouncedQuery = useDebounce(query, 500);
 
   useEffect(() => {
@@ -165,7 +162,6 @@ export default function SearchInput({ autoFocus = false }: { autoFocus?: boolean
         </div>
       )}
 
-      {/* ================= DROPDOWN RESULTS ================= */}
       {renderDropdown && (
         <div
           ref={dropdownRef}
@@ -227,7 +223,6 @@ export default function SearchInput({ autoFocus = false }: { autoFocus?: boolean
                         referrerPolicy="no-referrer"
                       />
                     </div>
-
                     <div className="flex flex-col flex-1 justify-center min-w-0 py-0.5">
                       <h4 className="text-gray-100 font-bold text-[15px] truncate mb-1.5" title={getTitle(manga)}>
                         {getTitle(manga)}

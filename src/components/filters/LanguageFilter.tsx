@@ -8,7 +8,6 @@ interface LanguageFilterProps {
   onChange: (langs: string[]) => void;
 }
 
-// Data Bahasa + Kode Bendera (FlagCDN)
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: 'gb' },
   { code: 'ja', label: 'Japanese', flag: 'jp' },
@@ -71,7 +70,6 @@ export default function LanguageFilter({ selectedLangs, onChange }: LanguageFilt
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Tutup dropdown saat klik luar
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -90,7 +88,6 @@ export default function LanguageFilter({ selectedLangs, onChange }: LanguageFilt
     }
   };
 
-  // Filter list berdasarkan search bar
   const filteredLangs = LANGUAGES.filter(l => 
     l.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -104,8 +101,6 @@ export default function LanguageFilter({ selectedLangs, onChange }: LanguageFilt
   return (
     <div className="relative" ref={dropdownRef}>
       <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Original Language</label>
-      
-      {/* Trigger Button */}
       <div 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full bg-[#232529] border border-[#3b3e44] rounded px-3 py-2 text-sm text-gray-200 focus:border-orange-500 cursor-pointer h-10 flex items-center justify-between select-none"
@@ -114,11 +109,8 @@ export default function LanguageFilter({ selectedLangs, onChange }: LanguageFilt
         <span className="text-[10px] text-gray-400">▼</span>
       </div>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#232529] border border-[#3b3e44] rounded shadow-2xl overflow-hidden flex flex-col max-h-80">
-          
-          {/* SEARCH BAR DI DALAM DROPDOWN */}
           <div className="p-2 border-b border-[#3b3e44] sticky top-0 bg-[#232529] z-10">
             <div className="relative flex items-center">
                 <span className="absolute text-3xl left-2 top-center text-gray-500">⌕</span>
@@ -133,7 +125,6 @@ export default function LanguageFilter({ selectedLangs, onChange }: LanguageFilt
             </div>
           </div>
 
-          {/* List Bahasa (Scrollable) */}
           <div className="overflow-y-auto flex-1 p-1">
             {filteredLangs.map((lang) => {
               const isSelected = selectedLangs.includes(lang.code);
@@ -143,19 +134,15 @@ export default function LanguageFilter({ selectedLangs, onChange }: LanguageFilt
                   onClick={() => toggleLang(lang.code)}
                   className="px-2 py-2 text-sm hover:bg-[#3b3e44] cursor-pointer flex items-center gap-3 transition-colors rounded"
                 >
-                   {/* Radio/Checkbox Circle */}
                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-orange-600 border-orange-600' : 'border-gray-500 bg-transparent'}`}>
                       {isSelected && <span className="text-white text-[8px]">●</span>}
                    </div>
-                   
-                   {/* Flag */}
                    <img 
                      src={`https://flagcdn.com/w20/${lang.flag}.png`} 
                      alt={lang.code} 
                      className="w-5 h-auto rounded-[2px] shadow-sm"
                    />
-                   
-                   {/* Label */}
+
                    <span className={isSelected ? "text-white font-medium" : "text-gray-300"}>
                      {lang.label}
                    </span>

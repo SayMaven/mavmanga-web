@@ -10,7 +10,6 @@ type SearchParams = Promise<{ page?: string }>;
 
 export const metadata: Metadata = {
   title: "Latest", 
-  // Hasil di Browser Tab nanti otomatis menjadi: "Pencarian Manga | SayMaven"
 };
 
 export default async function LatestUpdatesPage(props: { searchParams: SearchParams }) {
@@ -39,26 +38,16 @@ export default async function LatestUpdatesPage(props: { searchParams: SearchPar
             </div>
         </div>
 
-        {/* --- GRID DIGANTI JADI COLUMNS (MASONRY) --- */}
         {latestChapters.length > 0 ? (
             <>
-                {/* PERUBAHAN DI SINI:
-                   1. Hapus 'grid' dan 'grid-cols-...'
-                   2. Ganti jadi 'columns-...' (Ini bikin urutan Atas -> Bawah)
-                   3. gap-6 tetap ada untuk jarak horizontal antar kolom
-                */}
                 <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-3 xl:columns-3 gap-6">
                     {latestChapters.map((chapter: any) => (
-                        // WRAPPER ITEM:
-                        // 'break-inside-avoid' = Agar kartu tidak terpotong di tengah jalan saat ganti kolom
-                        // 'mb-6' = Memberi jarak vertikal antar kartu (pengganti gap-y di grid)
                         <div key={chapter.id} className="break-inside-avoid mb-6">
                             <LatestUpdateCard chapter={chapter} />
                         </div>
                     ))}
                 </div>
 
-                {/* PAGINATION */}
                 <Pagination 
                     currentPage={currentPage}
                     totalResults={totalResults}

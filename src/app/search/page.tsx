@@ -3,7 +3,6 @@ import { searchManga } from "@/services/mangadex";
 import SearchContent from "@/components/SearchContent";
 import { Metadata } from "next";
 
-// 1. Tambahkan definisi tipe untuk parameter baru
 type SearchParams = Promise<{ 
   q?: string; 
   status?: string; 
@@ -20,19 +19,16 @@ type SearchParams = Promise<{
   excludedTags?: string;
   includedTagsMode?: string;
   excludedTagsMode?: string;
-  availableTranslatedLanguage?: string; // <--- TAMBAHAN PENTING
+  availableTranslatedLanguage?: string; 
 }>;
 
 export const metadata: Metadata = {
   title: "Search", 
-  // Hasil di Browser Tab nanti otomatis menjadi: "Pencarian Manga | SayMaven"
 };
 
 export default async function SearchPage(props: { searchParams: SearchParams }) {
   const params = await props.searchParams;
   const currentPage = Number(params.page) || 1;
-  
-  // 2. Teruskan parameter ke fungsi service searchManga
   const response = await searchManga({
     q: params.q,
     status: params.status,
@@ -49,7 +45,7 @@ export default async function SearchPage(props: { searchParams: SearchParams }) 
     excludedTags: params.excludedTags,
     includedTagsMode: params.includedTagsMode,
     excludedTagsMode: params.excludedTagsMode,
-    availableTranslatedLanguage: params.availableTranslatedLanguage // <--- PASSING KE SERVICE
+    availableTranslatedLanguage: params.availableTranslatedLanguage
   });
 
   const results = response?.data || [];

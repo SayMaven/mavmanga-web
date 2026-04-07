@@ -8,23 +8,20 @@ interface PaginationProps {
   currentPage: number;
   totalResults: number;
   limit?: number;
-  basePath?: string; // <--- PROP BARU (Opsional)
+  basePath?: string; 
 }
 
 export default function Pagination({ 
   currentPage, 
   totalResults, 
   limit = 30,
-  basePath = "/search" // <--- Default ke /search kalau tidak diisi
+  basePath = "/search" 
 }: PaginationProps) {
   const totalPages = Math.ceil(totalResults / limit);
   const searchParams = useSearchParams();
-
-  // Helper untuk membuat URL halaman
   const createPageUrl = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', page.toString());
-    // GUNAKAN basePath DI SINI, BUKAN HARDCODE '/search'
     return `${basePath}?${params.toString()}`;
   };
 
@@ -54,7 +51,6 @@ export default function Pagination({
 
   return (
     <div className="flex justify-center items-center gap-2 mt-10 mb-20 select-none">
-      {/* Prev Button */}
       {currentPage > 1 ? (
         <Link href={createPageUrl(currentPage - 1)} className="px-3 py-2 bg-[#232529] hover:bg-[#3b3e44] rounded text-white transition">
            ←
@@ -63,7 +59,6 @@ export default function Pagination({
         <span className="px-3 py-2 bg-[#191A1C] text-gray-600 rounded cursor-not-allowed">←</span>
       )}
 
-      {/* Numbers */}
       {getPageNumbers().map((page, idx) => (
          typeof page === 'number' ? (
            <Link 
@@ -82,7 +77,6 @@ export default function Pagination({
          )
       ))}
 
-      {/* Next Button */}
       {currentPage < totalPages ? (
         <Link href={createPageUrl(currentPage + 1)} className="px-3 py-2 bg-[#232529] hover:bg-[#3b3e44] rounded text-white transition">
            →

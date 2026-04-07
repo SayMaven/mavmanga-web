@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-// --- PERUBAHAN DISINI: Import dari actions, bukan services ---
 import { fetchTagsServer } from '@/app/actions'; 
 
 interface TagFilterProps {
@@ -22,10 +21,8 @@ export default function TagFilter({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // --- FETCH DATA MENGGUNAKAN SERVER ACTION ---
   useEffect(() => {
     const fetchTags = async () => {
-        // Panggil Server Action (berjalan di server)
         const tags = await fetchTagsServer();
         if (tags && Array.isArray(tags)) {
             setAllTags(tags);
@@ -89,10 +86,7 @@ export default function TagFilter({
 
        {isOpen && (
          <>
-            {/* Backdrop Gelap untuk Mobile */}
             <div className="md:hidden fixed inset-0 bg-black/80 z-[90] backdrop-blur-sm" />
-
-            {/* DROPDOWN CONTAINER */}
             <div className="
                 /* --- MOBILE STYLES (Fixed Modal Tengah) --- */
                 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
@@ -107,8 +101,7 @@ export default function TagFilter({
                 /* --- COMMON STYLES --- */
                 bg-[#191A1C] border border-[#3b3e44] rounded-lg shadow-2xl p-4 overflow-hidden
             ">
-            
-            {/* Header Mobile Only (Close Button) */}
+
             <div className="flex justify-between items-center mb-4 md:hidden">
                 <h3 className="text-white font-bold">Select Tags</h3>
                 <button onClick={() => setIsOpen(false)} className="p-1 bg-[#3b3e44] rounded-full text-white">
@@ -116,7 +109,6 @@ export default function TagFilter({
                 </button>
             </div>
 
-            {/* Search */}
             <input 
                 type="text"
                 placeholder="Search tags..."
@@ -126,7 +118,6 @@ export default function TagFilter({
                 autoFocus
             />
 
-            {/* Tag List */}
             <div className="overflow-y-auto flex-1 pr-2 space-y-6 custom-scrollbar">
                 {groupedTags.map((group) => (
                     group.tags.length > 0 && (
@@ -161,7 +152,6 @@ export default function TagFilter({
                 ))}
             </div>
 
-            {/* Bottom Options (Modes) */}
             <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-4 flex-shrink-0">
                 <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Inclusion Mode</label>

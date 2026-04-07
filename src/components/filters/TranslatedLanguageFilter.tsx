@@ -10,7 +10,6 @@ interface TranslatedLanguageFilterProps {
   onChange: (langs: string[]) => void;
 }
 
-// Data Bahasa (Sama dengan LanguageFilter)
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: 'gb' },
   { code: 'ja', label: 'Japanese', flag: 'jp' },
@@ -78,7 +77,6 @@ export default function TranslatedLanguageFilter({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Tutup dropdown saat klik luar
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -110,8 +108,6 @@ export default function TranslatedLanguageFilter({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      
-      {/* LABEL + CHECKBOX UTAMA */}
       <label className="flex items-center gap-2 mb-1.5 cursor-pointer select-none group w-fit">
         <div className={`w-3.5 h-3.5 border rounded flex items-center justify-center transition-colors ${isEnabled ? 'bg-orange-600 border-orange-600' : 'border-gray-500 bg-transparent'}`}>
             {isEnabled && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}
@@ -127,7 +123,6 @@ export default function TranslatedLanguageFilter({
         </span>
       </label>
       
-      {/* TRIGGER BUTTON (Disabled style jika checkbox mati) */}
       <div 
         onClick={() => isEnabled && setIsOpen(!isOpen)}
         className={`w-full bg-[#232529] border rounded px-3 py-2 text-sm h-10 flex items-center justify-between select-none transition-all
@@ -141,11 +136,8 @@ export default function TranslatedLanguageFilter({
         <span className="text-[10px] text-gray-400">▼</span>
       </div>
 
-      {/* DROPDOWN MENU */}
       {isOpen && isEnabled && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#232529] border border-[#3b3e44] rounded shadow-2xl overflow-hidden flex flex-col max-h-80 animate-in fade-in zoom-in-95 duration-100">
-          
-          {/* SEARCH BAR */}
           <div className="p-2 border-b border-[#3b3e44] sticky top-0 bg-[#232529] z-10">
             <div className="relative flex items-center">
                 <span className="absolute text-3xl left-2 top-center text-gray-500">⌕</span>
@@ -160,7 +152,6 @@ export default function TranslatedLanguageFilter({
             </div>
           </div>
 
-          {/* LIST BAHASA */}
           <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
             {filteredLangs.map((lang) => {
               const isSelected = selectedLangs.includes(lang.code);
@@ -170,19 +161,14 @@ export default function TranslatedLanguageFilter({
                   onClick={() => toggleLang(lang.code)}
                   className="px-2 py-2 text-sm hover:bg-[#3b3e44] cursor-pointer flex items-center gap-3 transition-colors rounded group"
                 >
-                   {/* Checkbox Style */}
                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-orange-600 border-orange-600' : 'border-gray-500 bg-transparent group-hover:border-gray-400'}`}>
                       {isSelected && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
                    </div>
-                   
-                   {/* Flag */}
                    <img 
                      src={`https://flagcdn.com/w20/${lang.flag}.png`} 
                      alt={lang.code} 
                      className="w-5 h-auto rounded-[2px] shadow-sm opacity-80 group-hover:opacity-100 transition-opacity"
                    />
-                   
-                   {/* Label */}
                    <span className={isSelected ? "text-white font-medium" : "text-gray-300"}>
                      {lang.label}
                    </span>

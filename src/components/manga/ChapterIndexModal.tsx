@@ -13,7 +13,6 @@ interface ChapterIndexModalProps {
     onMarkRead: (id: string) => void;
 }
 
-// --- TIPE DATA ---
 interface GroupedChapter {
     chapNum: string;
     releases: any[]; 
@@ -24,7 +23,6 @@ interface GroupedVolume {
     chapters: GroupedChapter[];
 }
 
-// --- FILTER INPUT ---
 const FilterInput = ({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) => {
     const handleStep = (step: number) => {
         const currentVal = value === '' ? 0 : parseFloat(value);
@@ -56,7 +54,6 @@ const FilterInput = ({ label, value, onChange }: { label: string, value: string,
     );
 };
 
-// --- COMPONENT UTAMA ---
 export default function ChapterIndexModal({ 
     isOpen, 
     onClose, 
@@ -67,16 +64,11 @@ export default function ChapterIndexModal({
 }: ChapterIndexModalProps) {
     const [chFilter, setChFilter] = useState('');
     const [volFilter, setVolFilter] = useState('');
-    
-    // State Expand/Collapse
     const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
     const [activeChapterKey, setActiveChapterKey] = useState<string | null>(null);
-
-    // Ref untuk menyimpan state expandedVolumes terakhir
     const expandedVolumesRef = useRef(expandedVolumes);
     useEffect(() => { expandedVolumesRef.current = expandedVolumes; }, [expandedVolumes]);
 
-    // --- LOGIC GROUPING ---
     const groupedData: GroupedVolume[] = useMemo(() => {
         const volGroups: Record<string, Record<string, any[]>> = {};
         
@@ -119,7 +111,6 @@ export default function ChapterIndexModal({
         });
     }, [chapters, volFilter]); 
 
-    // --- EFFECT: DEBOUNCED INPUT HANDLER (300ms Delay - LEBIH CEPAT) ---
     useEffect(() => {
         if (!isOpen) return;
 
@@ -127,7 +118,6 @@ export default function ChapterIndexModal({
 
         const runFilterLogic = () => {
             if (chFilter !== '') {
-                // 1. User Mengetik sesuatu
                 let foundKey: string | null = null;
                 let targetVol: string | null = null;
                 const newExpandedVols = new Set(expandedVolumesRef.current); 
@@ -161,7 +151,6 @@ export default function ChapterIndexModal({
                 }
 
             } else {
-                // 2. Input Kosong (Reset)
                 setActiveChapterKey(null);
                 if (volFilter === '') {
                     setExpandedVolumes(new Set()); 
@@ -169,7 +158,6 @@ export default function ChapterIndexModal({
             }
         };
 
-        // UBAH DARI 500ms KE 300ms AGAR LEBIH RESPONSIF
         const debounceTimer = setTimeout(runFilterLogic, 300);
 
         return () => {
@@ -177,10 +165,8 @@ export default function ChapterIndexModal({
             if (animationTimeout) clearTimeout(animationTimeout);
         };
         
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [chFilter, groupedData, isOpen]); 
 
-    // --- INITIAL STATE ---
     useEffect(() => {
         if (isOpen) {
             setExpandedVolumes(new Set()); 
@@ -190,7 +176,6 @@ export default function ChapterIndexModal({
         }
     }, [isOpen]);
 
-    // --- TOGGLE ACTIONS ---
     const toggleVolume = (vol: string) => {
         const newSet = new Set(expandedVolumes);
         if (newSet.has(vol)) newSet.delete(vol);
@@ -237,8 +222,6 @@ export default function ChapterIndexModal({
                         Clear
                     </button>
                 </div>
-
-                {/* CONTENT LIST */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#191a1c]">
                     {groupedData.length === 0 ? (
                         <div className="text-center text-gray-500 py-10 italic">No chapters found matching criteria.</div>
@@ -254,8 +237,6 @@ export default function ChapterIndexModal({
 
                             return (
                                 <div key={group.vol} className="border border-[#32353b] rounded bg-[#1e2025] overflow-hidden">
-                                    
-                                    {/* VOLUME HEADER */}
                                     <div 
                                         onClick={() => toggleVolume(group.vol)}
                                         className="flex items-center justify-between px-4 py-3 bg-[#232529] cursor-pointer hover:bg-[#2a2c30] transition select-none group"
@@ -269,7 +250,6 @@ export default function ChapterIndexModal({
                                         </div>
                                     </div>
 
-                                    {/* LIST CHAPTERS */}
                                     {isVolExpanded && (
                                         <div className="border-t border-[#32353b] animate-in fade-in duration-200">
                                             {group.chapters.map((chGroup) => {
@@ -280,8 +260,6 @@ export default function ChapterIndexModal({
 
                                                 return (
                                                     <div key={uniqueKey} className="border-b border-[#32353b] last:border-0 bg-[#191a1c]">
-                                                        
-                                                        {/* CHAPTER HEADER */}
                                                         <div 
                                                             onClick={() => toggleChapter(uniqueKey)}
                                                             className={`flex items-center justify-between px-4 py-3 cursor-pointer transition select-none pl-8 border-l-4
@@ -292,12 +270,9 @@ export default function ChapterIndexModal({
                                                             <span className={`text-sm font-bold ${isActive ? 'text-white' : ''}`}>{displayCh}</span>
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-xs text-gray-500">{chGroup.releases.length}</span>
-                                                                {/* ANIMASI ROTASI LEBIH CEPAT (duration-300) */}
                                                                 <svg className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${isActive ? 'rotate-180 text-orange-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                                             </div>
                                                         </div>
-
-                                                        {/* TRANSLATOR LIST - ANIMASI LEBIH CEPAT (duration-300) */}
                                                         <div 
                                                             className={`grid transition-[grid-template-rows] duration-300 ease-out ${isActive ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                                                         >

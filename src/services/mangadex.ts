@@ -238,7 +238,7 @@ export const searchPeople = async (name: string) => {
   const targetUrl = new URL(`${API_BASE}/author`);
   targetUrl.searchParams.append('name', name);
   targetUrl.searchParams.append('limit', '10');
-  const res = await fetchDirect(targetUrl, { cache: 'no-store' });
+  const res = await fetchDirect(targetUrl, { next: { revalidate: 86400 } });
   return res.data;
 };
 
@@ -318,13 +318,13 @@ export const getChapterPages = async (chapterId: string) => {
 
 export const getMangaTags = async () => {
   const targetUrl = new URL(`${API_BASE}/manga/tag`);
-  const isServer = typeof window === 'undefined';
-  const options = isServer ? { next: { revalidate: 86400 } } : { cache: 'no-store' as RequestCache };
 
   try {
-    const res = await fetchDirect(targetUrl, options);
-    return res.data;
-  } catch (e) { return []; }
+    const res = await fetchDirect(targetUrl, { next: { revalidate: 86400 } });
+    return res.data || [];
+  } catch (e) { 
+    return []; 
+  }
 };
 
 export const getMangaCovers = async (mangaId: string) => {
@@ -402,7 +402,7 @@ export const getQuickSearch = async (query: string) => {
     targetUrl.searchParams.append('order[followedCount]', 'desc');
     ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => targetUrl.searchParams.append('contentRating[]', r));
 
-    const res = await fetch(targetUrl.toString(), { cache: 'no-store' });
+    const res = await fetch(targetUrl.toString(), { next: { revalidate: 60 } });
     if (!res.ok) return [];
 
     const data = await res.json();
@@ -411,7 +411,7 @@ export const getQuickSearch = async (query: string) => {
     if (mangas.length > 0) {
       const ids = mangas.map((m: any) => m.id);
       const statsUrl = `https://api.mangadex.org/statistics/manga?${ids.map((id: string) => `manga[]=${id}`).join('&')}`;
-      const statsRes = await fetch(statsUrl, { cache: 'no-store' });
+      const statsRes = await fetch(statsUrl, { next: { revalidate: 60 } });
 
       let statsData: any = {};
       if (statsRes.ok) {

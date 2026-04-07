@@ -13,7 +13,6 @@ const getFlagUrl = (lang: string) => {
   return countryCode ? `https://flagcdn.com/w40/${countryCode}.png` : null;
 };
 
-// Navigasi Panah
 function NextArrow(props: any) {
   const { className, style, onClick } = props;
   return (
@@ -70,14 +69,12 @@ export default function HeroCarousel({ mangaList }: { mangaList: any[] }) {
   return (
     <section className="relative w-full bg-[#121212] overflow-hidden group mb-12 select-none">
       
-      {/* JUDUL SECTION */}
       <div className="absolute top-0 left-0 right-0 z-40 container mx-auto px-4 md:px-10 pt-3 pointer-events-none">
         <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-md tracking-tight">
           Popular New Titles
         </h2>
       </div>
 
-      {/* Tinggi container: Mobile 650px (biar muat poster+teks), Desktop 600px */}
       <Slider {...settings} className="hero-carousel w-full h-[650px] md:h-[600px]">
         {mangaList.map((manga, index) => {
           const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0] || "No Title";
@@ -113,7 +110,6 @@ export default function HeroCarousel({ mangaList }: { mangaList: any[] }) {
               >
                 {/* LAYER 1: BACKGROUND */}
                 <div className="absolute inset-0 z-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={imageUrl} 
                     alt="bg"
@@ -130,12 +126,8 @@ export default function HeroCarousel({ mangaList }: { mangaList: any[] }) {
                 {/* LAYER 3: CONTENT */}
                 <div className="absolute inset-0 z-20 container mx-auto px-4 md:px-10 flex items-center h-full">
                   <div className="flex flex-col md:flex-row items-center md:items-center gap-6 md:gap-8 w-full h-full justify-center md:justify-start pt-16 md:pt-0">
-                    
-                    {/* --- FIX 1: POSTER (THUMBNAIL) --- */}
-                    {/* Hapus 'hidden'. Gunakan ukuran responsif: Mobile w-32, Desktop w-72 */}
                     <div className="flex-shrink-0 relative shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-transform duration-300 group-hover:scale-[1.02] z-30">
                       <div className="w-32 h-48 md:w-72 md:h-[420px] rounded-lg overflow-hidden border border-white/20 bg-gray-900">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={imageUrl} 
                           alt={title} 
@@ -146,7 +138,6 @@ export default function HeroCarousel({ mangaList }: { mangaList: any[] }) {
                       </div>
                     </div>
 
-                    {/* INFO TEKS */}
                     <div className="flex-1 text-white space-y-3 md:space-y-6 relative z-30 w-full text-center md:text-left">
                       
                       <div className="space-y-2">
@@ -182,9 +173,7 @@ export default function HeroCarousel({ mangaList }: { mangaList: any[] }) {
                       </div>
 
                     </div>
-
-                    {/* --- FIX 2: NOMOR RANKING --- */}
-                    {/* Mobile: Top Right (absolute), Desktop: Bottom Right */}
+                    
                     <div className="absolute bottom-16 right-4 md:bottom-0 md:top-auto md:right-0 text-white font-black text-6xl md:text-8xl opacity-20 md:opacity-10 pointer-events-none select-none z-0">
                       #{index + 1}
                     </div>

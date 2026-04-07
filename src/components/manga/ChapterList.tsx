@@ -22,26 +22,17 @@ export default function ChapterList({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  // State UI Lokal
   const [readChapters, setReadChapters] = useState<Set<string>>(new Set());
-  
-  // State untuk Collapse
   const [collapsedVolumes, setCollapsedVolumes] = useState<Set<string>>(new Set());
   const [collapsedChapters, setCollapsedChapters] = useState<Set<string>>(new Set()); 
-  
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isIndexModalOpen, setIsIndexModalOpen] = useState(false);
 
-  // --- LOCAL STORAGE LOGIC (DIPERBARUI) ---
-  
-  // 1. Fungsi untuk sinkronisasi data dari LocalStorage
   const syncReadStatus = useCallback(() => {
       const saved = localStorage.getItem('maven_read_chapters');
       if (saved) {
           try { 
               const parsed = JSON.parse(saved);
-              // Bandingkan ukuran set untuk menghindari re-render yang tidak perlu
               setReadChapters(prev => {
                   if (prev.size === parsed.length && parsed.every((id: string) => prev.has(id))) {
                       return prev;
@@ -54,13 +45,9 @@ export default function ChapterList({
       }
   }, []);
 
-  // 2. Load saat mount DAN saat window mendapat fokus (kembali dari reader)
   useEffect(() => {
-      syncReadStatus(); // Load awal
-
-      // Event listener agar saat user kembali ke tab/halaman ini, data di-refresh
+      syncReadStatus(); 
       window.addEventListener('focus', syncReadStatus);
-      // Event listener untuk sinkronisasi antar tab
       window.addEventListener('storage', syncReadStatus);
 
       return () => {
@@ -82,7 +69,6 @@ export default function ChapterList({
       saveReadStatus(newSet);
   };
 
-  // --- BULK READ PER CHAPTER HEADER ---
   const toggleChapterReadGroup = (e: React.MouseEvent, versions: any[]) => {
       e.preventDefault(); e.stopPropagation(); 
       
@@ -115,7 +101,6 @@ export default function ChapterList({
       setIsConfirmModalOpen(false); 
   };
 
-  // --- HELPER URL ---
   const createQueryString = (name: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set(name, value);
@@ -128,7 +113,6 @@ export default function ChapterList({
       router.push(`${pathname}?${createQueryString('order', newOrder)}`, { scroll: false });
   };
 
-  // --- TOGGLE HANDLERS ---
   const toggleVolume = (vol: string) => {
       const newSet = new Set(collapsedVolumes);
       if (newSet.has(vol)) newSet.delete(vol);
@@ -143,7 +127,6 @@ export default function ChapterList({
       setCollapsedChapters(newSet);
   };
 
-  // --- LOGIC GROUPING ---
   const groupedData = useMemo(() => {
     if (!rawChapters || !Array.isArray(rawChapters)) return [];
     
@@ -193,7 +176,6 @@ export default function ChapterList({
     });
   }, [rawChapters, currentOrder]);
 
-  // --- PAGINATION CALC ---
   const LIMIT = 100;
   const totalPages = Math.ceil(totalChapters / LIMIT);
   
@@ -235,7 +217,6 @@ export default function ChapterList({
             </div>
         )}
 
-        {/* HEADER CONTROLS */}
         <div className="flex flex-wrap items-center justify-between min-h-[40px]">
             <button 
                 onClick={handleSortToggle}
@@ -257,7 +238,6 @@ export default function ChapterList({
             </div>
         </div>
 
-        {/* LIST CONTENT */}
         <div className="w-full flex flex-col gap-2">
             {groupedData.length === 0 ? (
                 <div className="p-10 text-center text-gray-500 italic bg-[#1e2025] rounded border border-[#32353b]">No chapters found.</div>
@@ -276,8 +256,6 @@ export default function ChapterList({
 
                     return (
                         <div key={group.vol} className="w-full">
-                            
-                            {/* LEVEL 1: VOLUME HEADER */}
                             <div 
                                 onClick={() => toggleVolume(group.vol)}
                                 className="flex items-center px-4 py-3 cursor-pointer hover:bg-[#232529]/50 transition select-none group/header"
@@ -293,8 +271,6 @@ export default function ChapterList({
                                     <svg className={`w-4 h-4 text-white transition-transform duration-300 ${isVolCollapsed ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
                             </div>
-
-                            {/* ANIMASI BUKA/TUTUP VOLUME */}
                             <div 
                                 className={`grid transition-[grid-template-rows] duration-300 ease-out ${!isVolCollapsed ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                             >
@@ -304,28 +280,22 @@ export default function ChapterList({
                                         {group.chapters.map(({ chapNum, versions }) => {
                                             const uniqueKey = `${group.vol}-${chapNum}`;
                                             const isChCollapsed = collapsedChapters.has(uniqueKey);
-                                            
-                                            // --- LOGIKA HITUNG JUMLAH PER BAHASA ---
                                             const langCounts: Record<string, number> = {};
                                             versions.forEach(v => {
                                                 const lang = v.attributes.translatedLanguage;
                                                 langCounts[lang] = (langCounts[lang] || 0) + 1;
                                             });
                                             const langSummary = Object.entries(langCounts);
-                                            // ---------------------------------------
 
                                             const isAllRead = versions.every(v => readChapters.has(v.id));
 
                                             return (
                                                 <div key={uniqueKey} className="group bg-[#191a1c] rounded overflow-hidden border border-[#32353b] shadow-sm">
-                                                    
-                                                    {/* LEVEL 2: CHAPTER HEADER */}
                                                     <div 
                                                         onClick={() => toggleChapter(uniqueKey)} 
                                                         className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-[#232529] transition border-l-4 border-transparent hover:border-orange-500 select-none"
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            {/* TOMBOL MATA HEADER (Bulk Action) */}
                                                             <button 
                                                                 onClick={(e) => toggleChapterReadGroup(e, versions)}
                                                                 className="text-gray-500 hover:text-white transition focus:outline-none z-10"
@@ -337,17 +307,14 @@ export default function ChapterList({
                                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                                 )}
                                                             </button>
-
                                                             <span className="font-bold text-white text-base">{isNaN(parseFloat(chapNum)) ? chapNum : `Chapter ${chapNum}`}</span>
                                                         </div>
 
                                                         <div className="flex items-center gap-3">
-                                                            {/* ANIMASI FADE IN BENDERA + COUNTER SAAT COLLAPSED */}
                                                             <div className={`flex items-center gap-2 transition-opacity duration-300 ${isChCollapsed ? 'opacity-100' : 'opacity-0'}`}>
                                                                 {langSummary.map(([lang, count]) => (
                                                                     <div key={lang} className="flex items-center gap-1">
                                                                         <div className="w-5.5 h-3.5" title={lang}>
-                                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                                                             <img 
                                                                                 src={getFlagUrl(lang) ?? ''} 
                                                                                 alt={lang} 
@@ -363,7 +330,6 @@ export default function ChapterList({
                                                         </div>
                                                     </div>
 
-                                                    {/* ANIMASI BUKA/TUTUP CHAPTER ROWS */}
                                                     <div 
                                                         className={`grid transition-[grid-template-rows] duration-300 ease-out ${!isChCollapsed ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                                                     >
@@ -393,7 +359,6 @@ export default function ChapterList({
             )}
         </div>
 
-        {/* PAGINATION CONTROLS */}
         {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-4 pb-4">
                 {currentPage > 1 ? (

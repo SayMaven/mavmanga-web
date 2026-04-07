@@ -22,7 +22,6 @@ const getFlagUrl = (lang: string) => {
   return `https://flagcdn.com/w20/${countryCode}.png`;
 };
 
-// --- Helper: TimeAgo ---
 const TimeAgo = ({ dateString }: { dateString: string }) => {
   const [timeLabel, setTimeLabel] = useState("");
 
@@ -41,7 +40,6 @@ const TimeAgo = ({ dateString }: { dateString: string }) => {
   return <span suppressHydrationWarning className="text-gray-400 text-[10px] md:text-xs">{timeLabel || "..."}</span>;
 };
 
-// --- Helper: Judul Cerdas (Smart Title) ---
 const getPreferredTitle = (mangaAttr: any) => {
     if (!mangaAttr) return "Unknown Title";
 
@@ -53,18 +51,13 @@ const getPreferredTitle = (mangaAttr: any) => {
         return titles[lang] || altTitles.find((t: any) => t[lang])?.[lang];
     };
 
-    // Fallback darurat: Ambil value pertama dari object title
     const fallbackTitle = Object.values(titles)[0] as string || "Untitled";
 
     let mainTitle = "";
 
     if (ogLang === 'ja') {
-        // --- LOGIC MANGA JEPANG ---
-        // Prioritas: Romaji -> English -> Kanji -> Fallback
         mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
     } else {
-        // --- LOGIC MANGA LUAR JEPANG ---
-        // Prioritas: English -> Romaji -> Bahasa Asli -> Fallback
         mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
     }
 
@@ -81,29 +74,21 @@ export default function LatestUpdateCard({ chapter }: { chapter: any }) {
   if (!manga) return null;
 
   const mangaId = manga.id;
-  
-  // GUNAKAN LOGIC JUDUL BARU DISINI
   const mangaTitle = getPreferredTitle(manga.attributes);
-
   const rawChap = chapter.attributes?.chapter;
   const chapterLabel = rawChap ? `Ch.${rawChap}` : "Oneshot";
   const title = chapter.attributes?.title;
   const lang = chapter.attributes?.translatedLanguage || "en";
   const publishAt = chapter.attributes?.readableAt;
   const groupName = group?.attributes?.name || user?.attributes?.username || "No Group";
-  const fileName = chapter.coverFileName; // Property khusus hasil inject di service
-  
-  // Jika coverFileName tidak ada di chapter object (karena API response struktur beda), 
-  // Gunakan proxy OG image MangaDex sebagai fallback yang andal
+  const fileName = chapter.coverFileName; 
   const imageUrl = fileName 
     ? `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`
     : `https://og.mangadex.org/og-image/manga/${mangaId}`;
 
   return (
     <div className="flex gap-2 bg-[#232529] hover:bg-[#2f3136] p-2 rounded transition-colors group h-24">
-      {/* Thumbnail */}
       <Link href={`/manga/${mangaId}`} className="w-[50px] md:w-[60px] flex-shrink-0 bg-gray-700 rounded overflow-hidden relative">
-         {/* eslint-disable-next-line @next/next/no-img-element */}
          <img 
             src={imageUrl} 
             alt="thumb"
@@ -116,7 +101,6 @@ export default function LatestUpdateCard({ chapter }: { chapter: any }) {
          />
       </Link>
 
-      {/* Info Kanan */}
       <div className="flex-1 flex flex-col justify-between overflow-hidden py-0.5 min-w-0">
         
         <Link href={`/manga/${mangaId}`} title={mangaTitle}>

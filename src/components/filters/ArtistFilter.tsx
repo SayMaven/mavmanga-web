@@ -20,11 +20,9 @@ export default function ArtistFilter({ selectedArtists, onChange }: ArtistFilter
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Fetch Detail (Sync URL)
   useEffect(() => {
     const fetchInitialDetails = async () => {
       if (selectedArtists.length > 0 && selectedDetails.length === 0) {
-        // Reuse fungsi getAuthorsByIds (karena di API Author & Artist itu sama)
         const data = await getAuthorsByIds(selectedArtists);
         if (data) setSelectedDetails(data);
       }
@@ -32,7 +30,6 @@ export default function ArtistFilter({ selectedArtists, onChange }: ArtistFilter
     fetchInitialDetails();
   }, [selectedArtists]);
 
-  // 2. Click Outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -43,7 +40,6 @@ export default function ArtistFilter({ selectedArtists, onChange }: ArtistFilter
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 3. Search Logic
   useEffect(() => {
     if (!isOpen) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -113,7 +109,6 @@ export default function ArtistFilter({ selectedArtists, onChange }: ArtistFilter
 
           <div className="overflow-y-auto flex-1 p-1 min-h-[100px]">
             
-            {/* SELECTED ARTISTS */}
             {selectedDetails.length > 0 && (
                 <div className="mb-2 border-b border-white/5 pb-2">
                     <div className="px-2 py-1 text-[10px] font-bold text-orange-500 uppercase tracking-wider">Selected</div>
@@ -135,7 +130,6 @@ export default function ArtistFilter({ selectedArtists, onChange }: ArtistFilter
                 </div>
             )}
 
-            {/* SEARCH RESULTS */}
             <div className="px-2 py-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                 {searchTerm ? 'Search Results' : 'Type to search...'}
             </div>
