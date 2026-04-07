@@ -392,3 +392,42 @@ export const getMangaRecommendations = async (
     return [];
   }
 };
+
+export const getQuickSearch = async (query: string) => {
+  try {
+    const targetUrl = new URL(`${API_BASE}/manga`);
+    targetUrl.searchParams.append('title', query);
+    targetUrl.searchParams.append('limit', '5');
+    targetUrl.searchParams.append('includes[]', 'cover_art');
+    targetUrl.searchParams.append('order[followedCount]', 'desc');
+    ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => targetUrl.searchParams.append('contentRating[]', r));
+
+    const res = await fetch(targetUrl.toString(), { cache: 'no-store' });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const mangas = data.data || [];
+
+    if (mangas.length > 0) {
+      const ids = mangas.map((m: any) => m.id);
+      const statsUrl = `https://api.mangadex.org/statistics/manga?${ids.map((id: string) => `manga[]=${id}`).join('&')}`;
+      const statsRes = await fetch(statsUrl, { cache: 'no-store' });
+
+      let statsData: any = {};
+      if (statsRes.ok) {
+        const statsJson = await statsRes.json();
+        statsData = statsJson.statistics || {};
+      }
+
+      return mangas.map((m: any) => ({
+        ...m,
+        statistics: statsData[m.id] || null
+      }));
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Quick Search Error:", error);
+    return [];
+  }
+};

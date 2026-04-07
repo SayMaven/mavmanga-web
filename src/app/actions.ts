@@ -1,7 +1,7 @@
 // src/app/actions.ts
 'use server';
 
-import { getMangaTags, getChapterPages } from "@/services/mangadex";
+import { getMangaTags, getChapterPages, getQuickSearch } from "@/services/mangadex";
 
 export async function fetchTagsServer() {
   try {
@@ -18,5 +18,12 @@ export async function fetchChapterPagesServer(chapterId: string) {
     return await getChapterPages(chapterId);
   } catch (error) {
     return null;
+  }
+}
+export async function fetchQuickSearchServer(query: string) {
+  try {
+    return await getQuickSearch(query);
+  } catch (error) {
+    return [];
   }
 }

@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { fetchQuickSearchServer } from '@/app/actions';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -63,35 +64,8 @@ export default function SearchInput({ autoFocus = false }: { autoFocus?: boolean
 
       setIsSearching(true);
       try {
-        const res = await fetch(`https://api.mangadex.org/manga?title=${encodeURIComponent(debouncedQuery)}&limit=5&includes[]=cover_art&order[followedCount]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`);
-
-        if (res.ok) {
-          const data = await res.json();
-          const mangas = data.data || [];
-
-          if (mangas.length > 0) {
-            const ids = mangas.map((m: any) => m.id);
-            const statsUrl = `https://api.mangadex.org/statistics/manga?${ids.map((id: string) => `manga[]=${id}`).join('&')}`;
-            const statsRes = await fetch(statsUrl);
-
-            let statsData: any = {};
-            if (statsRes.ok) {
-              const statsJson = await statsRes.json();
-              statsData = statsJson.statistics || {};
-            }
-
-            const mergedResults = mangas.map((m: any) => ({
-              ...m,
-              statistics: statsData[m.id] || null
-            }));
-
-            setResults(mergedResults);
-          } else {
-            setResults([]);
-          }
-        } else {
-          setResults([]);
-        }
+        const data = await fetchQuickSearchServer(debouncedQuery);
+        setResults(data || []);
       } catch (error) {
         console.error("Quick search error:", error);
         setResults([]);
@@ -124,7 +98,18 @@ export default function SearchInput({ autoFocus = false }: { autoFocus?: boolean
   };
 
   const getTitle = (manga: any) => {
-    return manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown Title';
+    const titleObj = manga.attributes.title;
+    const originalLang = manga.attributes.originalLanguage;
+    const altTitles = manga.attributes.altTitles || [];
+
+    if (originalLang === 'zh' || originalLang === 'zh-hk' || originalLang === 'ko') {
+      const engAltTitle = altTitles.find((alt: any) => alt.en);
+      if (engAltTitle) {
+        return engAltTitle.en;
+      }
+    }
+
+    return titleObj.en || Object.values(titleObj)[0] || 'Unknown Title';
   };
 
   const formatNumber = (num: number | undefined | null) => {
