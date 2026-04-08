@@ -50,13 +50,20 @@ export default function ReaderViewer({
 
     useEffect(() => {
         const fetchImages = async () => {
-            setIsLoadingImgs(true); setIsImgError(false);
+            setIsLoadingImgs(true); 
+            setIsImgError(false);
             const data = await fetchChapterPagesServer(chapterId);
             if (data?.chapter?.data?.length) {
                 const { chapter: { hash, data: files } } = data;
-                const masterBaseUrl = "https://uploads.mangadex.org";
-                setImages(files.map((file: string) => `${masterBaseUrl}/data/${hash}/${file}`));
-            } else { setIsImgError(true); }
+                const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+                setImages(files.map((file: string) => {
+                    const originalUrl = `https://uploads.mangadex.org/data/${hash}/${file}`;
+                    return `${myProxy}${originalUrl}`;
+                }));
+
+            } else { 
+                setIsImgError(true); 
+            }
             setIsLoadingImgs(false);
         };
         fetchImages();
