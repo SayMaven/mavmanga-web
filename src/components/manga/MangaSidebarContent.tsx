@@ -214,9 +214,10 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
                     {recommendations.map((rec: any) => {
                          const recTitle = rec.attributes.title.en || Object.values(rec.attributes.title)[0];
                          const recCover = rec.relationships.find((r:any) => r.type === 'cover_art')?.attributes?.fileName;
+                         const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
                          const recImage = recCover 
-                            ? `https://uploads.mangadex.org/covers/${rec.id}/${recCover}.256.jpg` 
-                            : 'https://placehold.co/200x300?text=No+Cover';
+                            ? `${myProxy}https://uploads.mangadex.org/covers/${rec.id}/${recCover}.256.jpg` 
+                            : `https://placehold.co/200x300?text=No+Cover`;
 
                          return (
                             <Link key={rec.id} href={`/manga/${rec.id}`} className="group relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-white/5 bg-[#232529]">

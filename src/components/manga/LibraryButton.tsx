@@ -36,9 +36,10 @@ export default function LibraryButton({ manga }: { manga: any }) {
 
   const title = getSmartTitle(); 
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
+  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
   const coverUrl = coverRel?.attributes?.fileName 
-    ? `https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}.256.jpg`
-    : 'https://placehold.co/300x450';
+    ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}.256.jpg`
+    : `https://placehold.co/300x450`;
 
   useEffect(() => {
     const savedData = localStorage.getItem('maven_library');

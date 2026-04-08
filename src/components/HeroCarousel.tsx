@@ -91,11 +91,12 @@ export default function HeroCarousel({ mangaList }: { mangaList: any[] }) {
              }
           }
           description = description.replace(/[*_~`]/g, '');
-
+          
+          const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
           const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
           const fileName = coverRel?.attributes?.fileName;
           const imageUrl = fileName 
-            ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}`
+            ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${fileName}`
             : 'https://placehold.co/1920x1080/222/999?text=No+Cover';
 
           const tags = manga.attributes.tags.slice(0, 4).map((t: any) => t.attributes.name.en); 

@@ -50,9 +50,10 @@ export default function MangaHero({
   const descriptionRaw = attr.description?.en || attr.description?.id || "No description available.";
   
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
+  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
   const coverUrl = coverRel?.attributes?.fileName 
-    ? `https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}.512.jpg`
-    : 'https://placehold.co/300x450/333/999?text=No+Cover';
+    ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}.512.jpg`
+    : `https://placehold.co/300x450/333/999?text=No+Cover`;
 
   const author = manga.relationships.find((r: any) => r.type === 'author')?.attributes?.name || "Unknown";
   const artist = manga.relationships.find((r: any) => r.type === 'artist')?.attributes?.name || "Unknown";

@@ -82,9 +82,10 @@ export default function LatestUpdateCard({ chapter }: { chapter: any }) {
   const publishAt = chapter.attributes?.readableAt;
   const groupName = group?.attributes?.name || user?.attributes?.username || "No Group";
   const fileName = chapter.coverFileName; 
+  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
   const imageUrl = fileName 
-    ? `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`
-    : `https://og.mangadex.org/og-image/manga/${mangaId}`;
+    ? `${myProxy}https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`
+    : `${myProxy}https://og.mangadex.org/og-image/manga/${mangaId}`;
 
   return (
     <div className="flex gap-2 bg-[#232529] hover:bg-[#2f3136] p-2 rounded transition-colors group h-24">

@@ -13,7 +13,7 @@ interface MangaTabsProps {
 
 export default function MangaTabs({ children, mangaId, covers, recommendations }: MangaTabsProps) {
   const [activeTab, setActiveTab] = useState<'chapters' | 'art' | 'recommendations'>('chapters');
-
+  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
   return (
     <div className="w-full">
       <div className="flex items-center gap-8 border-b border-white/20 mb-6 relative">
@@ -69,7 +69,7 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
                 covers.map((cover) => (
                     <div key={cover.id} className="group relative aspect-[2/3] rounded-md overflow-hidden bg-[#232529] border border-[#32353b] shadow-lg">
                         <img 
-                            src={`https://uploads.mangadex.org/covers/${mangaId}/${cover.attributes.fileName}.256.jpg`} 
+                            src={`${myProxy}https://uploads.mangadex.org/covers/${mangaId}/${cover.attributes.fileName}.256.jpg`} 
                             alt={cover.attributes.volume || "Cover"}
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover transition duration-300 group-hover:scale-110"
@@ -97,10 +97,10 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
                 recommendations.map((manga) => {
                     const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
                     const coverFile = manga.relationships.find((r:any) => r.type === 'cover_art')?.attributes?.fileName;
+                    const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
                     const coverImg = coverFile 
-                        ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFile}.256.jpg` 
+                        ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${coverFile}.256.jpg` 
                         : 'https://placehold.co/200x300?text=No+Cover';
-
                     return (
                         <Link key={manga.id} href={`/manga/${manga.id}`} className="group relative aspect-[2/3] rounded-md overflow-hidden bg-[#232529] border border-[#32353b] shadow-md hover:shadow-orange-500/40 transition hover:-translate-y-1">
                             <img 
