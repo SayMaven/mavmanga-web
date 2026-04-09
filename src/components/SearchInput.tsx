@@ -90,7 +90,7 @@ export default function SearchInput({ autoFocus = false }: { autoFocus?: boolean
 
   const getCoverUrl = (manga: any) => {
     const coverRel = manga.relationships.find((r: any) => r.type === 'cover_art');
-    const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+    const myProxy = process.env.NEXT_PUBLIC_PROXY;
     const fileName = coverRel?.attributes?.fileName;
     return fileName ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : '';
   };

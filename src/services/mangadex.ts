@@ -1,6 +1,11 @@
 // src/services/mangadex.ts
 
 const API_BASE = 'https://api.mangadex.org';
+const MY_PROXY = process.env.NEXT_PUBLIC_PROXY;
+
+const wrapProxy = (url: string | URL) => {
+  return `${MY_PROXY}${encodeURIComponent(url.toString())}`;
+};
 
 const fetchDirect = async (url: URL, options?: RequestInit) => {
   const isServer = typeof window === 'undefined';
@@ -9,7 +14,7 @@ const fetchDirect = async (url: URL, options?: RequestInit) => {
     headers['User-Agent'] = 'MavManga-App/1.0.0';
   }
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(wrapProxy(url), {
     headers: headers,
     ...options,
   });
@@ -22,7 +27,8 @@ const fetchDirect = async (url: URL, options?: RequestInit) => {
   const json = await response.json();
   return {
     data: Array.isArray(json.data) ? json.data : [],
-    total: json.total || 0
+    total: json.total || 0,
+    statistics: json.statistics || {}
   };
 };
 
@@ -260,7 +266,7 @@ export const getMangaDetail = async (id: string) => {
     const headers: Record<string, string> = {};
     if (isServer) headers['User-Agent'] = 'MavManga-App/1.0.0';
 
-    const res = await fetch(targetUrl.toString(), {
+    const res = await fetch(wrapProxy(targetUrl), {
       headers: headers,
       next: { revalidate: 86400 }
     });
@@ -306,7 +312,7 @@ export const getChapterPages = async (chapterId: string) => {
     const headers: Record<string, string> = {};
     if (typeof window === 'undefined') headers['User-Agent'] = 'MavManga-App/1.0.0';
 
-    const response = await fetch(targetUrl.toString(), {
+    const response = await fetch(wrapProxy(targetUrl), {
       headers: headers,
       cache: 'no-store'
     });
@@ -333,7 +339,7 @@ export const getMangaCovers = async (mangaId: string) => {
     const headers: Record<string, string> = {};
     if (isServer) headers['User-Agent'] = 'MavManga-App/1.0.0';
 
-    const res = await fetch(`https://api.mangadex.org/cover?manga[]=${mangaId}&limit=100&order[volume]=asc`, {
+    const res = await fetch(wrapProxy(`https://api.mangadex.org/cover?manga[]=${mangaId}&limit=100&order[volume]=asc`), {
       headers: headers,
       next: { revalidate: 86400 }
     });
@@ -402,7 +408,7 @@ export const getQuickSearch = async (query: string) => {
     targetUrl.searchParams.append('order[followedCount]', 'desc');
     ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r => targetUrl.searchParams.append('contentRating[]', r));
 
-    const res = await fetch(targetUrl.toString(), { next: { revalidate: 60 } });
+    const res = await fetch(wrapProxy(targetUrl), { next: { revalidate: 60 } });
     if (!res.ok) return [];
 
     const data = await res.json();
@@ -411,7 +417,7 @@ export const getQuickSearch = async (query: string) => {
     if (mangas.length > 0) {
       const ids = mangas.map((m: any) => m.id);
       const statsUrl = `https://api.mangadex.org/statistics/manga?${ids.map((id: string) => `manga[]=${id}`).join('&')}`;
-      const statsRes = await fetch(statsUrl, { next: { revalidate: 60 } });
+      const statsRes = await fetch(wrapProxy(statsUrl), { next: { revalidate: 60 } });
 
       let statsData: any = {};
       if (statsRes.ok) {

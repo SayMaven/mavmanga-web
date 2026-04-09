@@ -82,7 +82,7 @@ export default function LatestUpdateCard({ chapter }: { chapter: any }) {
   const publishAt = chapter.attributes?.readableAt;
   const groupName = group?.attributes?.name || user?.attributes?.username || "No Group";
   const fileName = chapter.coverFileName; 
-  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+  const myProxy = process.env.NEXT_PUBLIC_PROXY;
   const imageUrl = fileName 
     ? `${myProxy}https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`
     : `${myProxy}https://og.mangadex.org/og-image/manga/${mangaId}`;

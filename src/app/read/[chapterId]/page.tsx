@@ -5,9 +5,19 @@ import ReaderViewer from "@/components/reader/ReaderViewer";
 
 async function getChapterMetaData(chapterId: string) {
   try {
-    const res = await fetch(`https://api.mangadex.org/chapter/${chapterId}?includes[]=manga&includes[]=scanlation_group&includes[]=user`, { next: { revalidate: 3600 } });
-    return res.ok ? (await res.json()).data : null;
-  } catch { return null; }
+    const myProxy = process.env.NEXT_PUBLIC_PROXY;
+    const apiUrl = "https://api.mangadex.org"; 
+    const fullTargetUrl = `${apiUrl}/chapter/${chapterId}?includes[]=manga&includes[]=scanlation_group&includes[]=user`;
+    const res = await fetch(`${myProxy}${encodeURIComponent(fullTargetUrl)}`, { 
+      next: { revalidate: 3600 } 
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data; 
+  } catch (error) { 
+    console.error("Error fetching metadata:", error);
+    return null; 
+  }
 }
 
 function getSmartTitle(manga: any) {

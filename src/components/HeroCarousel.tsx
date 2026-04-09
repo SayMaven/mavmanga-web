@@ -92,7 +92,7 @@ export default function HeroCarousel({ mangaList }: { mangaList: any[] }) {
           }
           description = description.replace(/[*_~`]/g, '');
           
-          const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+          const myProxy = process.env.NEXT_PUBLIC_PROXY;
           const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
           const fileName = coverRel?.attributes?.fileName;
           const imageUrl = fileName 

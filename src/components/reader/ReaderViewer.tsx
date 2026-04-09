@@ -55,7 +55,7 @@ export default function ReaderViewer({
             const data = await fetchChapterPagesServer(chapterId);
             if (data?.chapter?.data?.length) {
                 const { chapter: { hash, data: files } } = data;
-                const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+                const myProxy = process.env.NEXT_PUBLIC_PROXY;
                 setImages(files.map((file: string) => {
                     const originalUrl = `https://uploads.mangadex.org/data/${hash}/${file}`;
                     return `${myProxy}${originalUrl}`;

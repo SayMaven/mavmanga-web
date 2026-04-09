@@ -13,7 +13,7 @@ interface MangaTabsProps {
 
 export default function MangaTabs({ children, mangaId, covers, recommendations }: MangaTabsProps) {
   const [activeTab, setActiveTab] = useState<'chapters' | 'art' | 'recommendations'>('chapters');
-  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+  const myProxy = process.env.NEXT_PUBLIC_PROXY;
   return (
     <div className="w-full">
       <div className="flex items-center gap-8 border-b border-white/20 mb-6 relative">
@@ -97,7 +97,7 @@ export default function MangaTabs({ children, mangaId, covers, recommendations }
                 recommendations.map((manga) => {
                     const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
                     const coverFile = manga.relationships.find((r:any) => r.type === 'cover_art')?.attributes?.fileName;
-                    const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+                    const myProxy = process.env.NEXT_PUBLIC_PROXY;
                     const coverImg = coverFile 
                         ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${coverFile}.256.jpg` 
                         : 'https://placehold.co/200x300?text=No+Cover';

@@ -51,7 +51,7 @@ export default function SearchCard({ manga }: { manga: any }) {
   const originalLang = attr.originalLanguage; 
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
   const fileName = coverRel?.attributes?.fileName;
-  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+  const myProxy = process.env.NEXT_PUBLIC_PROXY;
   const imageUrl = fileName 
     ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg`
     : `${myProxy}https://og.mangadex.org/og-image/manga/${manga.id}`;

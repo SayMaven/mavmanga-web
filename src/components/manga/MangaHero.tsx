@@ -50,7 +50,7 @@ export default function MangaHero({
   const descriptionRaw = attr.description?.en || attr.description?.id || "No description available.";
   
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
-  const myProxy = "https://manga-proxy.wahyunanda1258.workers.dev/?url=";
+  const myProxy = process.env.NEXT_PUBLIC_PROXY;
   const coverUrl = coverRel?.attributes?.fileName 
     ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}.512.jpg`
     : `https://placehold.co/300x450/333/999?text=No+Cover`;
