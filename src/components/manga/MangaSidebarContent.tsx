@@ -93,7 +93,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
                 {author && (
                     <div className="space-y-1 flex flex-col">
                         <h3 className="text-white font-bold text-xs uppercase opacity-70 mb-1">Author</h3>
-                        <div className="bg-[#232529] border border-[#32353b] rounded px-3 py-2 text-white text-xs font-bold truncate w-fit max-w-full hover:border-gray-500 transition cursor-default" title={author}>{author}</div>
+                        <div className="bg-[#232529] border border-[#32353b] rounded px-3 py-2 text-white text-xs font-bold  truncate w-fit max-w-full hover:border-gray-500 transition cursor-default" title={author}>{author}</div>
                     </div>
                 )}
                 {artist && (
@@ -112,7 +112,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
                 <div className="flex flex-wrap gap-2">
                     {genres.map((tag: any) => (
                         <Link key={tag.id} href={`/search?includedTags=${tag.id}`}>
-                            <span className="bg-[#232529] hover:bg-[#2f3136] border border-[#32353b] hover:border-gray-500 text-gray-300 hover:text-white px-2 py-1 rounded text-[10px] font-bold uppercase transition cursor-pointer inline-block">{tag.attributes.name.en}</span>
+                            <span className="bg-[#232529] hover:bg-[#2f3136] border border-[#32353b] hover:border-gray-500 text-gray-300 hover:text-white px-2 py-1 rounded text-[10px] font-bold transition cursor-pointer inline-block">{tag.attributes.name.en}</span>
                         </Link>
                     ))}
                 </div>
@@ -126,7 +126,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
                 <div className="flex flex-wrap gap-2">
                     {themes.map((tag: any) => (
                         <Link key={tag.id} href={`/search?includedTags=${tag.id}`}>
-                            <span className="bg-[#232529] hover:bg-[#2f3136] border border-[#32353b] hover:border-gray-500 text-gray-300 hover:text-white px-2 py-1 rounded text-[10px] font-bold uppercase transition cursor-pointer inline-block">{tag.attributes.name.en}</span>
+                            <span className="bg-[#232529] hover:bg-[#2f3136] border border-[#32353b] hover:border-gray-500 text-gray-300 hover:text-white px-2 py-1 rounded text-[10px] font-bold transition cursor-pointer inline-block">{tag.attributes.name.en}</span>
                         </Link>
                     ))}
                 </div>
@@ -139,7 +139,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
                 <h3 className="text-white font-bold text-sm mb-2">Format</h3>
                 <div className="flex flex-wrap gap-2">
                     {formats.map((tag: any) => (
-                        <span key={tag.id} className="bg-[#232529] border border-[#32353b] text-gray-300 px-2 py-1 rounded text-[10px] font-bold uppercase inline-block">{tag.attributes.name.en}</span>
+                        <span key={tag.id} className="bg-[#232529] border border-[#32353b] text-gray-300 px-2 py-1 rounded text-[10px] font-bold inline-block">{tag.attributes.name.en}</span>
                     ))}
                 </div>
             </div>
