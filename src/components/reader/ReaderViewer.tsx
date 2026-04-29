@@ -1,228 +1,447 @@
 // src/components/reader/ReaderViewer.tsx
 'use client';
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import ReaderHeader from "./ReaderHeader";
-import ReaderSidebar from "./ReaderSidebar"; 
-import ReaderSettingsModal from "./ReaderSettingsModal";
-import GapModal from "./GapModal";
-import ReaderProgressBar from "./ReaderProgressBar";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ReaderConfig, PageStyle } from "@/types/readerTypes"; 
-import { fetchChapterPagesServer } from "@/app/actions";
-
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import ReaderHeader from './ReaderHeader';
+import ReaderSidebar from './ReaderSidebar';
+import ReaderSettingsModal from './ReaderSettingsModal';
+import GapModal from './GapModal';
+import ReaderProgressBar from './ReaderProgressBar';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { ReaderConfig, PageStyle } from '@/types/readerTypes';
+import { fetchChapterPagesServer } from '@/app/actions';
 
 interface ReaderViewerProps {
     chapterId: string;
-    currentChapter: any; currentChapterId: string; chapterList: any[];
-    mangaId: string; mangaTitle: string; scanlationGroup: string; uploaderName?: string;
+    currentChapter: any;
+    currentChapterId: string;
+    chapterList: any[];
+    mangaId: string;
+    mangaTitle: string;
+    scanlationGroup: string;
+    uploaderName?: string;
 }
 
-export default function ReaderViewer({ 
-    chapterId, currentChapter, currentChapterId, chapterList, mangaId, mangaTitle, scanlationGroup, uploaderName = "User"
+const DEFAULT_CONFIG: ReaderConfig = {
+    pageStyle: 'single',
+    readingDirection: 'ltr',
+    headerVisible: true,
+    progressBarStyle: 'normal',
+    cursorHint: 'none',
+    fitMode: 'height',
+    imageSizing: { containWidth: false, containHeight: true, stretchSmall: false, maxWidth: false, maxHeight: false },
+    turnPageByScroll: 'wheel',
+    doubleClickFullscreen: false,
+};
+
+export default function ReaderViewer({
+    chapterId, currentChapter, currentChapterId, chapterList,
+    mangaId, mangaTitle, scanlationGroup, uploaderName = 'User'
 }: ReaderViewerProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const isMobile = useMediaQuery('(max-width: 768px)');
-    
+
     const [images, setImages] = useState<string[]>([]);
     const [isLoadingImgs, setIsLoadingImgs] = useState(true);
     const [isImgError, setIsImgError] = useState(false);
 
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [showUI, setShowUI] = useState(false); 
+    const [showUI, setShowUI] = useState(false);
     const [showSidebar, setShowSidebar] = useState(false);
     const [isWebtoonDetected, setIsWebtoonDetected] = useState(false);
-    const [imageRatios, setImageRatios] = useState<{[key: number]: number}>({});
-    
+    const [imageRatios, setImageRatios] = useState<{ [key: number]: number }>({});
+
     const containerRef = useRef<HTMLDivElement>(null);
     const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
     const isNavigatingRef = useRef(false);
 
-    const defaultConfig: ReaderConfig = { pageStyle: 'single', readingDirection: 'ltr', headerVisible: true, progressBarStyle: 'normal', cursorHint: 'none', fitMode: 'height', imageSizing: { containWidth: false, containHeight: true, stretchSmall: false, maxWidth: false, maxHeight: false }, turnPageByScroll: 'wheel', doubleClickFullscreen: false };
-    const [readerConfig, setReaderConfig] = useState<ReaderConfig>(defaultConfig);
+    const [readerConfig, setReaderConfig] = useState<ReaderConfig>(DEFAULT_CONFIG);
     const [isConfigLoaded, setIsConfigLoaded] = useState(false);
-
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isGapModalOpen, setIsGapModalOpen] = useState(false);
     const [pendingNextChapterId, setPendingNextChapterId] = useState<string | null>(null);
     const [gapDetails, setGapDetails] = useState({ curr: '', next: '' });
 
+    // ── Fetch pages ──────────────────────────────────────────
     useEffect(() => {
+        let cancelled = false;
         const fetchImages = async () => {
-            setIsLoadingImgs(true); 
+            setIsLoadingImgs(true);
             setIsImgError(false);
             const data = await fetchChapterPagesServer(chapterId);
+            if (cancelled) return;
             if (data?.chapter?.data?.length) {
                 const { chapter: { hash, data: files } } = data;
                 const myProxy = process.env.NEXT_PUBLIC_PROXY;
-                setImages(files.map((file: string) => {
-                    const originalUrl = `https://uploads.mangadex.org/data/${hash}/${file}`;
-                    return `${myProxy}${originalUrl}`;
-                }));
-
-            } else { 
-                setIsImgError(true); 
+                setImages(files.map((file: string) =>
+                    `${myProxy}https://uploads.mangadex.org/data/${hash}/${file}`
+                ));
+            } else {
+                setIsImgError(true);
             }
             setIsLoadingImgs(false);
         };
         fetchImages();
         setIsWebtoonDetected(false);
-    }, [chapterId, mangaId]);
+        return () => { cancelled = true; };
+    }, [chapterId]);
 
+    // ── Document title ───────────────────────────────────────
     useEffect(() => {
-        const chapLabel = currentChapter?.chapter ? `Chapter ${currentChapter.chapter}` : "Oneshot";
-        document.title = `${currentIndex + 1} | ${chapLabel} - ${mangaTitle} | SayMaven`;
-    }, [currentIndex, currentChapter, mangaTitle]); 
+        const chapLabel = currentChapter?.chapter ? `Ch. ${currentChapter.chapter}` : 'Oneshot';
+        document.title = `${currentIndex + 1} | ${chapLabel} · ${mangaTitle}`;
+    }, [currentIndex, currentChapter, mangaTitle]);
 
-    const activePageStyle: PageStyle = useMemo(() => isWebtoonDetected ? 'long-strip' : (isMobile ? (readerConfig.pageStyle === 'long-strip' ? 'long-strip' : 'single') : readerConfig.pageStyle), [isWebtoonDetected, isMobile, readerConfig.pageStyle]);
+    // ── Active page style ─────────────────────────────────────
+    const activePageStyle: PageStyle = useMemo(() =>
+        isWebtoonDetected ? 'long-strip'
+            : (isMobile ? (readerConfig.pageStyle === 'long-strip' ? 'long-strip' : 'single') : readerConfig.pageStyle),
+        [isWebtoonDetected, isMobile, readerConfig.pageStyle]
+    );
 
+    // ── Scroll tracking (long-strip) ─────────────────────────
     useEffect(() => {
-        if (activePageStyle === 'long-strip' && containerRef.current) {
-            const container = containerRef.current;
-            const handleScroll = () => {
-                if (isNavigatingRef.current) return; 
+        if (activePageStyle !== 'long-strip' || !containerRef.current) return;
+        const container = containerRef.current;
+        let rafId = 0;
+
+        const handleScroll = () => {
+            if (isNavigatingRef.current) return;
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
                 let bestIdx = currentIndex, maxVis = 0;
                 const cRect = container.getBoundingClientRect();
                 imageRefs.current.forEach((img, idx) => {
                     if (!img) return;
-                    const r = img.getBoundingClientRect(), vTop = Math.max(cRect.top, r.top), vBot = Math.min(cRect.bottom, r.bottom), vH = Math.max(0, vBot - vTop);
+                    const r = img.getBoundingClientRect();
+                    const vH = Math.max(0, Math.min(cRect.bottom, r.bottom) - Math.max(cRect.top, r.top));
                     if (vH > maxVis) { maxVis = vH; bestIdx = idx; }
                 });
                 if (bestIdx !== currentIndex) setCurrentIndex(bestIdx);
-            };
-            container.addEventListener('scroll', handleScroll, { passive: true });
-            return () => container.removeEventListener('scroll', handleScroll);
-        }
+            });
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            cancelAnimationFrame(rafId);
+        };
     }, [activePageStyle, currentIndex, images.length]);
 
+    // ── Init page index from URL ─────────────────────────────
     useEffect(() => {
         const pos = searchParams.get('pos');
         setCurrentIndex((pos === 'last' && images.length > 0) ? images.length - 1 : 0);
-    }, [images.length, searchParams]); 
+    }, [images.length, searchParams]);
 
+    // ── Mark chapter as read ─────────────────────────────────
     useEffect(() => {
-        const saved = localStorage.getItem('maven_read_chapters');
-        let rSet = new Set<string>();
-        if (saved) try { rSet = new Set(JSON.parse(saved)); } catch(e){}
-        if (!rSet.has(currentChapterId)) {
-            rSet.add(currentChapterId);
-            localStorage.setItem('maven_read_chapters', JSON.stringify(Array.from(rSet)));
-            window.dispatchEvent(new Event("storage"));
-        }
+        try {
+            const saved = localStorage.getItem('maven_read_chapters');
+            const rSet: Set<string> = saved ? new Set(JSON.parse(saved)) : new Set();
+            if (!rSet.has(currentChapterId)) {
+                rSet.add(currentChapterId);
+                localStorage.setItem('maven_read_chapters', JSON.stringify(Array.from(rSet)));
+                window.dispatchEvent(new Event('storage'));
+            }
+        } catch { /* non-critical */ }
     }, [currentChapterId]);
 
+    // ── Load/persist config ──────────────────────────────────
     useEffect(() => {
-        const sConf = localStorage.getItem('maven_reader_config');
-        if (sConf) try { setReaderConfig({ ...defaultConfig, ...JSON.parse(sConf) }); } catch(e){}
-        if (localStorage.getItem('maven_reader_sidebar') === 'true') setShowSidebar(true);
+        try {
+            const sConf = localStorage.getItem('maven_reader_config');
+            if (sConf) setReaderConfig({ ...DEFAULT_CONFIG, ...JSON.parse(sConf) });
+            if (localStorage.getItem('maven_reader_sidebar') === 'true') setShowSidebar(true);
+        } catch { /* use defaults */ }
         setIsConfigLoaded(true);
     }, []);
 
-    useEffect(() => { if (isConfigLoaded) localStorage.setItem('maven_reader_config', JSON.stringify(readerConfig)); }, [readerConfig, isConfigLoaded]);
-    useEffect(() => { if (isConfigLoaded) localStorage.setItem('maven_reader_sidebar', showSidebar.toString()); }, [showSidebar, isConfigLoaded]);
+    useEffect(() => {
+        if (isConfigLoaded) localStorage.setItem('maven_reader_config', JSON.stringify(readerConfig));
+    }, [readerConfig, isConfigLoaded]);
 
+    useEffect(() => {
+        if (isConfigLoaded) localStorage.setItem('maven_reader_sidebar', showSidebar.toString());
+    }, [showSidebar, isConfigLoaded]);
+
+    // ── Images per page ──────────────────────────────────────
     const imagesPerPage = useMemo(() => {
         if (activePageStyle === 'long-strip') return 1;
         if (activePageStyle === 'wide-strip') return 3;
-        if (activePageStyle === 'double') return (imageRatios[currentIndex] > 1.2 || imageRatios[currentIndex + 1] > 1.2) ? 1 : 2;
+        if (activePageStyle === 'double')
+            return (imageRatios[currentIndex] > 1.2 || imageRatios[currentIndex + 1] > 1.2) ? 1 : 2;
         return 1;
     }, [activePageStyle, currentIndex, imageRatios]);
 
+    // ── Chapter navigation ───────────────────────────────────
     const currentLang = currentChapter?.translatedLanguage || 'en';
     const findChap = useCallback((isNext: boolean) => {
-        const sLang = chapterList.filter(c => c.attributes.translatedLanguage === currentLang).sort((a,b) => parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter));
+        const sLang = chapterList
+            .filter(c => c.attributes.translatedLanguage === currentLang)
+            .sort((a, b) => parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter));
         const idx = sLang.findIndex(c => c.id === currentChapterId);
         if (isNext && idx !== -1 && idx < sLang.length - 1) {
-            const next = sLang[idx + 1], currN = parseFloat(currentChapter?.chapter || '0'), nextN = parseFloat(next.attributes.chapter);
-            if ((nextN - currN) > 1.001 || (Math.floor(nextN) - Math.floor(currN) > 1)) {
-                setGapDetails({ curr: currentChapter?.chapter, next: next.attributes.chapter }); setPendingNextChapterId(next.id); setIsGapModalOpen(true);
-            } else router.push(`/read/${next.id}`);
-        } else if (!isNext && idx > 0) router.push(`/read/${sLang[idx - 1].id}?pos=last`);
-        else router.push(`/manga/${mangaId}`);
+            const next = sLang[idx + 1];
+            const gap = parseFloat(next.attributes.chapter) - parseFloat(currentChapter?.chapter || '0');
+            if (gap > 1.001 || Math.floor(parseFloat(next.attributes.chapter)) - Math.floor(parseFloat(currentChapter?.chapter || '0')) > 1) {
+                setGapDetails({ curr: currentChapter?.chapter, next: next.attributes.chapter });
+                setPendingNextChapterId(next.id);
+                setIsGapModalOpen(true);
+            } else {
+                router.push(`/read/${next.id}`);
+            }
+        } else if (!isNext && idx > 0) {
+            router.push(`/read/${sLang[idx - 1].id}?pos=last`);
+        } else {
+            router.push(`/manga/${mangaId}`);
+        }
     }, [chapterList, currentLang, currentChapterId, currentChapter, router, mangaId]);
 
+    // ── Page navigation ──────────────────────────────────────
     const goToPage = useCallback((isNext: boolean) => {
         if (activePageStyle === 'long-strip') return;
         if (isNext ? currentIndex < images.length - 1 : currentIndex > 0) {
             isNavigatingRef.current = true;
             setCurrentIndex(p => isNext ? Math.min(p + imagesPerPage, images.length - 1) : Math.max(p - 1, 0));
-            setShowUI(false); if (readerConfig.fitMode === 'width') window.scrollTo({ top: 0 });
+            setShowUI(false);
+            if (readerConfig.fitMode === 'width') window.scrollTo({ top: 0 });
             setTimeout(() => { isNavigatingRef.current = false; }, 300);
-        } else findChap(isNext);
+        } else {
+            findChap(isNext);
+        }
     }, [activePageStyle, currentIndex, images.length, imagesPerPage, readerConfig.fitMode, findChap]);
 
     const handleJump = useCallback((index: number) => {
-        isNavigatingRef.current = true; setCurrentIndex(Math.min(index, images.length - 1));
-        if (activePageStyle === 'long-strip') imageRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        else { setShowUI(false); if (readerConfig.fitMode === 'width') window.scrollTo({ top: 0 }); }
+        isNavigatingRef.current = true;
+        setCurrentIndex(Math.min(index, images.length - 1));
+        if (activePageStyle === 'long-strip') {
+            imageRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            setShowUI(false);
+            if (readerConfig.fitMode === 'width') window.scrollTo({ top: 0 });
+        }
         setTimeout(() => { isNavigatingRef.current = false; }, 500);
     }, [images.length, activePageStyle, readerConfig.fitMode]);
 
+    // ── Wheel → show/hide UI ─────────────────────────────────
     useEffect(() => {
         const handleWheel = (e: WheelEvent) => {
             if (isNavigatingRef.current || isSettingsOpen) return;
-            if (e.deltaY > 10 && showUI) setShowUI(false); else if (e.deltaY < -20 && !showUI) setShowUI(true);
+            if (e.deltaY > 10 && showUI) setShowUI(false);
+            else if (e.deltaY < -20 && !showUI) setShowUI(true);
         };
-        window.addEventListener('wheel', handleWheel); return () => window.removeEventListener('wheel', handleWheel);
+        window.addEventListener('wheel', handleWheel, { passive: true });
+        return () => window.removeEventListener('wheel', handleWheel);
     }, [showUI, isSettingsOpen]);
 
+    // ── Keyboard navigation ──────────────────────────────────
     useEffect(() => {
         const handleKey = (e: KeyboardEvent) => {
             if (isGapModalOpen || isSettingsOpen) return;
             const isLtr = readerConfig.readingDirection === 'ltr';
-            if (e.key === 'ArrowRight') goToPage(isLtr); if (e.key === 'ArrowLeft') goToPage(!isLtr);
-            if (e.key === ' ' || e.key === 'Enter') goToPage(true);
-            if (e.key === 'Escape') setShowSidebar(false); if (e.key === 'm') setShowSidebar(p => !p);
+            if (e.key === 'ArrowRight') goToPage(isLtr);
+            else if (e.key === 'ArrowLeft') goToPage(!isLtr);
+            else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); goToPage(true); }
+            else if (e.key === 'Escape') setShowSidebar(false);
+            else if (e.key === 'm') setShowSidebar(p => !p);
         };
-        window.addEventListener('keydown', handleKey); return () => window.removeEventListener('keydown', handleKey);
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
     }, [goToPage, isGapModalOpen, isSettingsOpen, readerConfig.readingDirection]);
 
-    const handleImgLoad = (idx: number, e: React.SyntheticEvent<HTMLImageElement>) => {
+    // ── Webtoon detection ────────────────────────────────────
+    const handleImgLoad = useCallback((idx: number, e: React.SyntheticEvent<HTMLImageElement>) => {
         const ratio = e.currentTarget.naturalWidth / e.currentTarget.naturalHeight;
         if (!isWebtoonDetected && idx < 5 && ratio < 0.5) setIsWebtoonDetected(true);
         setImageRatios(p => p[idx] === ratio ? p : { ...p, [idx]: ratio });
-    };
+    }, [isWebtoonDetected]);
 
-    if (isLoadingImgs) return <div className="h-screen flex items-center justify-center bg-[#121212] text-white">Loading pages...</div>;
-    if (isImgError || !images.length) return <div className="h-screen flex items-center justify-center bg-[#121212] text-red-500">Gagal untuk memuat halaman.</div>;
+    // ── Image style ──────────────────────────────────────────
+    const imgClass = useCallback((count: number) => {
+        const fitClass = readerConfig.imageSizing.containHeight ? 'h-screen w-auto' : 'w-full h-auto';
+        const maxClass = count === 1 ? 'max-w-full' : count === 2 ? 'max-w-[50vw]' : 'max-w-[33vw]';
+        return `object-contain transition-opacity duration-150 ${fitClass} ${maxClass}`;
+    }, [readerConfig.imageSizing.containHeight]);
 
-    const imgStyle = (c: number) => `transition-all duration-200 object-contain ${readerConfig.imageSizing.containHeight ? 'h-screen w-auto' : readerConfig.imageSizing.containWidth ? 'w-full h-auto' : 'h-screen w-auto'} ${c===1?'max-w-full':c===2?'max-w-[50vw]':'max-w-[33vw]'}`;
-    
+    // ── Loading / error states ───────────────────────────────
+    if (isLoadingImgs) return (
+        <div className="h-screen flex flex-col items-center justify-center bg-[#0f0f11] gap-4">
+            <svg className="w-8 h-8 text-orange-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="text-gray-400 text-sm font-medium">Loading pages…</p>
+        </div>
+    );
+
+    if (isImgError || !images.length) return (
+        <div className="h-screen flex flex-col items-center justify-center bg-[#0f0f11] gap-3">
+            <svg className="w-10 h-10 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-gray-500 font-semibold">Failed to load pages</p>
+            <button onClick={() => router.refresh()} className="text-orange-400 text-sm hover:underline">Try again</button>
+        </div>
+    );
+
+    const isLongStrip = activePageStyle === 'long-strip';
+
     return (
-        <div ref={containerRef} className={`relative w-full h-screen bg-[#121212] select-none z-[100] ${activePageStyle === 'long-strip' ? 'overflow-y-auto custom-scrollbar' : (readerConfig.imageSizing.containHeight ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar')}`}>
-            {!isWebtoonDetected && <div className="hidden absolute top-0 left-0 w-0 h-0 overflow-hidden opacity-0">{images.slice(0, 5).map((src, i) => <img key={i} src={src} onLoad={(e) => handleImgLoad(i, e)} alt="pre" referrerPolicy="no-referrer" />)}</div>}
+        <div
+            ref={containerRef}
+            className={`relative w-full h-screen bg-[#0f0f11] select-none z-[100] ${
+                isLongStrip
+                    ? 'overflow-y-auto custom-scrollbar'
+                    : (readerConfig.imageSizing.containHeight ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar')
+            }`}
+            style={{ transform: 'translateZ(0)' }}
+        >
+            {/* Preload first 5 images for webtoon detection (hidden) */}
+            {!isWebtoonDetected && (
+                <div className="absolute w-0 h-0 overflow-hidden opacity-0 pointer-events-none" aria-hidden="true">
+                    {images.slice(0, 5).map((src, i) => (
+                        <img key={i} src={src} onLoad={(e) => handleImgLoad(i, e)} alt="" referrerPolicy="no-referrer" decoding="async" />
+                    ))}
+                </div>
+            )}
 
-            {activePageStyle === 'long-strip' ? (
-                <div className="w-full min-h-full flex flex-col items-center pb-20 pt-16 cursor-pointer" onClick={(e) => e.detail === 1 && setShowSidebar(p=>!p)}>
-                    {images.map((src, i) => <img key={i} ref={el => { imageRefs.current[i] = el; }} src={src} alt={`P${i+1}`} onLoad={e => handleImgLoad(i, e)} className="w-full h-auto max-w-4xl object-contain mb-0.5" loading="lazy" referrerPolicy="no-referrer" />)}
-                    <div className="flex flex-col gap-4 mt-8 mb-20 text-center cursor-default" onClick={e=>e.stopPropagation()}>
-                        <p className="text-gray-400">End of Chapter</p>
-                        <div className="flex gap-4 justify-center"><button onClick={()=>findChap(false)} className="px-6 py-3 bg-[#3c3e44] text-white rounded font-bold hover:bg-[#4a4d55]">Prev</button><button onClick={()=>findChap(true)} className="px-6 py-3 bg-[#FF6740] text-white rounded font-bold hover:bg-orange-600">Next</button></div>
+            {/* ── LONG STRIP ── */}
+            {isLongStrip ? (
+                <div
+                    className="w-full min-h-full flex flex-col items-center pb-20 pt-16"
+                    onClick={(e) => e.detail === 1 && setShowSidebar(p => !p)}
+                >
+                    {images.map((src, i) => (
+                        <img
+                            key={i}
+                            ref={el => { imageRefs.current[i] = el; }}
+                            src={src}
+                            alt={`Page ${i + 1}`}
+                            onLoad={e => handleImgLoad(i, e)}
+                            className="w-full h-auto max-w-4xl object-contain mb-0.5"
+                            loading={i < 3 ? 'eager' : 'lazy'}
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                            style={{ willChange: i < 3 ? 'auto' : 'auto' }}
+                        />
+                    ))}
+                    <div
+                        className="flex flex-col gap-4 mt-10 mb-20 text-center"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <p className="text-gray-500 text-sm">— End of Chapter —</p>
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => findChap(false)}
+                                className="px-6 py-2.5 bg-white/[0.06] border border-white/10 text-white rounded-lg font-bold hover:bg-white/10 transition-colors text-sm"
+                            >
+                                ← Prev
+                            </button>
+                            <button
+                                onClick={() => findChap(true)}
+                                className="px-6 py-2.5 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-400 transition-colors text-sm shadow-lg shadow-orange-500/20"
+                            >
+                                Next →
+                            </button>
+                        </div>
                     </div>
                 </div>
             ) : (
-                <div className={`w-full min-h-full flex items-center justify-center gap-0.5 ${readerConfig.imageSizing.containHeight ? 'h-full' : ''} ${readerConfig.readingDirection === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    {images.slice(currentIndex, currentIndex + imagesPerPage).map((src, i) => <img key={currentIndex+i} src={src} alt={`P${currentIndex+i+1}`} onLoad={e => handleImgLoad(currentIndex+i, e)} className={`${imgStyle(imagesPerPage)} shadow-lg`} loading="eager" referrerPolicy="no-referrer" />)}
+                /* ── SINGLE / DOUBLE / WIDE ── */
+                <div
+                    className={`w-full min-h-full flex items-center justify-center gap-0.5 ${
+                        readerConfig.imageSizing.containHeight ? 'h-full' : ''
+                    } ${readerConfig.readingDirection === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}
+                    style={{ transform: 'translateZ(0)' }}
+                >
+                    {images.slice(currentIndex, currentIndex + imagesPerPage).map((src, i) => (
+                        <img
+                            key={currentIndex + i}
+                            src={src}
+                            alt={`Page ${currentIndex + i + 1}`}
+                            onLoad={e => handleImgLoad(currentIndex + i, e)}
+                            className={`${imgClass(imagesPerPage)} shadow-2xl`}
+                            loading="eager"
+                            decoding="async"
+                            fetchPriority="high"
+                            referrerPolicy="no-referrer"
+                            style={{ willChange: 'transform' }}
+                        />
+                    ))}
                 </div>
             )}
 
-            {activePageStyle !== 'long-strip' && (
-                <div className="fixed inset-0 flex z-10">
-                    <div className="w-[30%] h-full cursor-pointer" onClick={() => {if(!showSidebar) goToPage(readerConfig.readingDirection!=='ltr'); else setShowSidebar(false)}} />
-                    <div className="w-[40%] h-full" onClick={() => setShowSidebar(p=>!p)} />
-                    <div className="w-[30%] h-full cursor-pointer" onClick={() => {if(!showSidebar) goToPage(readerConfig.readingDirection==='ltr'); else setShowSidebar(false)}} />
+            {/* ── Click zones (single/double mode) ── */}
+            {!isLongStrip && (
+                <div className="fixed inset-0 flex z-10" aria-hidden="true">
+                    <div className="w-[30%] h-full cursor-pointer" onClick={() => { if (!showSidebar) goToPage(readerConfig.readingDirection !== 'ltr'); else setShowSidebar(false); }} />
+                    <div className="w-[40%] h-full" onClick={() => setShowSidebar(p => !p)} />
+                    <div className="w-[30%] h-full cursor-pointer" onClick={() => { if (!showSidebar) goToPage(readerConfig.readingDirection === 'ltr'); else setShowSidebar(false); }} />
                 </div>
             )}
 
-            <GapModal isOpen={isGapModalOpen} currChapter={gapDetails.curr} nextChapter={gapDetails.next} onCancel={()=>setIsGapModalOpen(false)} onContinue={()=>{if(pendingNextChapterId) router.push(`/read/${pendingNextChapterId}`)}} onBackToTitle={()=>router.push(`/manga/${mangaId}`)} />
-            <ReaderSettingsModal isOpen={isSettingsOpen} onClose={()=>setIsSettingsOpen(false)} config={readerConfig} setConfig={setReaderConfig} />
-            
-            {readerConfig.headerVisible && <ReaderHeader showUI={showUI} mangaTitle={mangaTitle} mangaId={mangaId} currentChapter={currentChapter} currentIndex={currentIndex} totalImages={images.length} scanlationGroup={scanlationGroup} onOpenSidebar={()=>setShowSidebar(true)} />}
-            
-            <ReaderSidebar isOpen={showSidebar} onClose={()=>setShowSidebar(false)} config={readerConfig} setConfig={setReaderConfig} onOpenSettings={()=>setIsSettingsOpen(true)} mangaId={mangaId} mangaTitle={mangaTitle} currentChapter={currentChapter} currentChapterId={currentChapterId} chapterList={chapterList} currentIndex={currentIndex} totalImages={images.length} scanlationGroup={scanlationGroup} uploaderName={uploaderName} isWebtoonMode={isWebtoonDetected} onPageChange={handleJump} onChapterChange={id=>router.push(`/read/${id}`)} onPrevPage={()=>goToPage(false)} onNextPage={()=>goToPage(true)} />
-            
-            {readerConfig.progressBarStyle !== 'hidden' && <ReaderProgressBar currentIndex={currentIndex} totalImages={images.length} onPageChange={handleJump} readingDirection={readerConfig.readingDirection} />}
+            {/* ── Modals ── */}
+            <GapModal
+                isOpen={isGapModalOpen}
+                currChapter={gapDetails.curr}
+                nextChapter={gapDetails.next}
+                onCancel={() => setIsGapModalOpen(false)}
+                onContinue={() => { if (pendingNextChapterId) router.push(`/read/${pendingNextChapterId}`); }}
+                onBackToTitle={() => router.push(`/manga/${mangaId}`)}
+            />
+            <ReaderSettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                config={readerConfig}
+                setConfig={setReaderConfig}
+            />
+
+            {/* ── UI Overlays ── */}
+            {readerConfig.headerVisible && (
+                <ReaderHeader
+                    showUI={showUI}
+                    mangaTitle={mangaTitle}
+                    mangaId={mangaId}
+                    currentChapter={currentChapter}
+                    currentIndex={currentIndex}
+                    totalImages={images.length}
+                    scanlationGroup={scanlationGroup}
+                    onOpenSidebar={() => setShowSidebar(true)}
+                />
+            )}
+
+            <ReaderSidebar
+                isOpen={showSidebar}
+                onClose={() => setShowSidebar(false)}
+                config={readerConfig}
+                setConfig={setReaderConfig}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                mangaId={mangaId}
+                mangaTitle={mangaTitle}
+                currentChapter={currentChapter}
+                currentChapterId={currentChapterId}
+                chapterList={chapterList}
+                currentIndex={currentIndex}
+                totalImages={images.length}
+                scanlationGroup={scanlationGroup}
+                uploaderName={uploaderName}
+                isWebtoonMode={isWebtoonDetected}
+                onPageChange={handleJump}
+                onChapterChange={id => router.push(`/read/${id}`)}
+                onPrevPage={() => goToPage(false)}
+                onNextPage={() => goToPage(true)}
+            />
+
+            {readerConfig.progressBarStyle !== 'hidden' && (
+                <ReaderProgressBar
+                    currentIndex={currentIndex}
+                    totalImages={images.length}
+                    onPageChange={handleJump}
+                    readingDirection={readerConfig.readingDirection}
+                />
+            )}
         </div>
     );
 }

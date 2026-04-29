@@ -33,9 +33,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       displayTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
   }
 
+  const description = attr.description?.en || attr.description?.id || '';
+  const plainDesc = description.replace(/[*_~`\[\]]/g, '').slice(0, 160);
+
   return {
-    title: displayTitle, 
-    description: `Baca manga ${displayTitle} bahasa Indonesia gratis di SayMaven.`,
+    title: `${displayTitle} — MavenManga`,
+    description: plainDesc || `Read ${displayTitle} manga online for free on MavenManga.`,
+    openGraph: {
+      title: displayTitle,
+      description: plainDesc,
+    },
   };
 }
 
@@ -99,7 +106,7 @@ export default async function MangaDetail({
   ]);
 
   return (
-    <main className="min-h-screen bg-[#121212] text-gray-200 font-sans pb-20">
+    <main className="min-h-screen bg-[#0f0f11] text-gray-200 font-sans pb-20">
       
       <MangaHero 
         manga={manga} 
@@ -111,7 +118,7 @@ export default async function MangaDetail({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-3 h-fit">
                     <MangaSidebar manga={manga}>
-                        <MangaSidebarContent manga={manga} />
+                        <MangaSidebarContent manga={manga} recommendations={recommendations} />
                     </MangaSidebar>
                 </div>
 

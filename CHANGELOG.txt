@@ -1,0 +1,288 @@
+================================================================================
+  MAVMANGA — CHANGELOG SESI OPTIMASI & PERBAIKAN UI
+  Tanggal  : 30 April 2026
+  Branch   : update
+  Total    : 20 file diubah, +2425 baris ditambah, -1295 baris dihapus
+================================================================================
+
+--------------------------------------------------------------------------------
+1. PENGGANTIAN IKON EMOJI → SVG
+   File: Semua komponen yang sebelumnya menggunakan emoji sebagai ikon
+--------------------------------------------------------------------------------
+MASALAH:
+  Ikon emoji tidak konsisten tampilannya di berbagai OS (Windows, macOS, Android)
+  dan ukurannya tidak bisa dikontrol dengan presisi.
+
+SOLUSI:
+  Semua ikon emoji (📂, 👁, 📖, ⏸, ✖, dsb.) diganti dengan inline SVG
+  yang sepenuhnya controllable via CSS (ukuran, warna, animasi).
+
+--------------------------------------------------------------------------------
+2. FLAG MAP — PENAMBAHAN BENDERA BAHASA
+   File: src/components/MangaCard.tsx
+         src/components/SearchCard.tsx
+         src/components/manga/MangaSidebarContent.tsx
+         src/utils/chapterUtils.ts
+--------------------------------------------------------------------------------
+PERUBAHAN:
+  Menambahkan entri bahasa yang didukung MangaDex tapi belum ada di peta bendera:
+  - Catalan (ca) → bendera Catalonia (es-ct via flagcdn)
+  - Azerbaijan (az), Kazakh (kk), Uzbek (uz), Kyrgyz (ky), Georgian (ka)
+  - Mongolian (mn), Sinhala (si), Latin (la → Vatican), Esperanto (eo → UN)
+  - Amharic (am → Ethiopia), Swahili (sw → Tanzania)
+  - Romanized variants: ja-ro, ko-ro, zh-ro
+
+PENJELASAN TEKNIS:
+  flagcdn.com digunakan sebagai sumber gambar bendera berdasarkan kode ISO 3166-1
+  alpha-2. Bahasa seperti Catalan tidak punya negara sendiri sehingga dipetakan
+  ke kode regional khusus (es-ct).
+
+--------------------------------------------------------------------------------
+3. HERO CAROUSEL — PERBAIKAN TAMPILAN MOBILE & DESKTOP
+   File: src/components/HeroCarousel.tsx
+--------------------------------------------------------------------------------
+MASALAH:
+  a. Judul dan deskripsi manga terpotong dengan "..." (line-clamp berlebihan)
+  b. Di mobile, tombol "Read Now" tidak terlihat tanpa scroll
+  c. Tidak ada keterangan musim (misal "Winter 2026") pada mode seasonal
+
+SOLUSI:
+  a. Deskripsi ditampilkan penuh tanpa line-clamp ketat; judul responsif
+  b. Layout mobile diubah jadi flex column dengan ukuran teks proporsional
+     agar semua elemen muat di viewport tanpa scroll
+  c. Keterangan season dikembalikan — ditampilkan di bawah judul carousel
+     seasonal
+
+TAMBAHAN OPTIMASI:
+  - fetchPriority="high" pada gambar hero pertama
+  - GPU composite layer (transform: translateZ(0)) pada banner background
+  - Thumbnail preload: loading="eager" untuk slide aktif, "lazy" untuk lainnya
+  - Tombol "Read Now" kini langsung membuka chapter pertama (bukan halaman manga)
+
+--------------------------------------------------------------------------------
+4. LATEST UPDATE — TAMPILAN MOBILE MULTI-KOLOM
+   File: src/components/LatestUpdateCard.tsx
+--------------------------------------------------------------------------------
+MASALAH:
+  Di mobile, latest update cards tampil satu kolom sehingga terlalu panjang
+  dan membutuhkan banyak scroll.
+
+SOLUSI:
+  Grid diubah menjadi 2 kolom di mobile (grid-cols-2), 3 di tablet,
+  dan 4+ di desktop. Deskripsi disembunyikan di mobile (hidden sm:block)
+  agar kartu lebih ringkas.
+
+--------------------------------------------------------------------------------
+5. SEARCH PAGE — OPTIMASI PERFORMA & PERBAIKAN BUG
+   File: src/app/search/page.tsx
+         src/components/SearchContent.tsx
+         src/components/SearchCard.tsx
+--------------------------------------------------------------------------------
+PERUBAHAN UTAMA:
+
+  a. SearchCard.tsx:
+     - React.memo() untuk mencegah re-render tidak perlu
+     - loading="lazy" + decoding="async" pada thumbnail
+     - GPU hints: transform: translateZ(0)
+     - Deskripsi disembunyikan di mobile
+
+  b. SearchContent.tsx:
+     - useTransition untuk navigasi non-blocking (halaman terasa lebih responsif)
+     - useCallback pada semua event handler
+     - BUGFIX: activeFilterCount tidak lagi menghitung query teks sebagai filter
+       (sebelumnya badge menampilkan angka 1 padahal tidak ada filter aktif)
+     - BUGFIX: Hapus "contain: layout style" dari grid hasil pencarian — properti
+       ini menciptakan stacking context baru yang memblokir dropdown filter
+     - Menambahkan overflow-visible dan z-50 pada filter panel
+     - Grid hasil: 3 kolom di mobile
+
+  c. search/page.tsx:
+     - generateMetadata dinamis: judul halaman menyesuaikan query pencarian
+       (contoh: 'Search: "One Piece" — MavenManga')
+     - Background konsisten: #0f0f11
+
+  d. BUGFIX Tombol × Ganda:
+     - Input search diubah dari type="search" ke type="text"
+     - type="search" menyebabkan browser (Chrome/Safari) otomatis menambahkan
+       tombol clear bawaan sehingga muncul 2 tombol × bersamaan
+
+--------------------------------------------------------------------------------
+6. MANGA DETAIL PAGE — OPTIMASI & PENINGKATAN UI
+   File: src/app/manga/[id]/page.tsx
+         src/components/manga/MangaHero.tsx
+         src/components/manga/MangaSidebarContent.tsx
+         src/components/manga/MangaTabs.tsx
+--------------------------------------------------------------------------------
+
+  a. MangaHero.tsx:
+     - DIHAPUS: react-markdown + remark-gfm (library berat ~60KB bundle)
+       Diganti dengan parser plaintext ringan custom (stripMarkdown function)
+     - fetchPriority="high" + loading="eager" pada cover dan banner
+     - GPU composite layer pada background banner
+     - React.memo pada TagChip component
+     - Artist tidak ditampilkan ulang jika sama dengan Author
+     - Layout mobile: tombol dan tag center-aligned
+
+  b. MangaSidebarContent.tsx:
+     - DIHAPUS: duplikasi fetch getMangaRecommendations (sudah di-fetch di
+       page.tsx sehingga sebelumnya ada 2 API call untuk data yang sama)
+     - Recommendations sekarang diterima via prop dari page.tsx (zero-cost)
+     - loading="lazy" + decoding="async" pada flag images dan link icons
+     - Section Recommendations dikembalikan di bawah Alternative Titles
+
+  c. MangaTabs.tsx:
+     - memo(CoverCard) dan memo(RecCard) untuk mencegah re-render saat
+       berpindah antar tab
+     - loading="lazy" + decoding="async" + willChange pada semua gambar
+     - Tab bar lebih clean dengan count badge yang styled
+
+  d. manga/[id]/page.tsx:
+     - Background: #121212 → #0f0f11 (konsisten dengan global theme)
+     - SEO: generateMetadata dengan OpenGraph support
+     - Title format: "{Judul} — MavenManga"
+     - Description: auto-generated dari synopsis manga (plaintext, 160 char)
+
+  FITUR: Tombol "Start Reading" langsung membuka chapter pertama.
+  Logika: Ambil chapter terawal (asc), prioritaskan bahasa ID → EN → apapun.
+
+--------------------------------------------------------------------------------
+7. READER PAGE — OPTIMASI PERFORMA
+   File: src/app/read/[chapterId]/page.tsx
+         src/components/reader/ReaderViewer.tsx
+--------------------------------------------------------------------------------
+
+  a. ReaderViewer.tsx — Perubahan Major:
+     - Cancellable fetch: flag "cancelled" mencegah setState setelah unmount
+       (mencegah memory leak dan race condition saat navigasi cepat)
+     - requestAnimationFrame throttle pada scroll tracker di long-strip mode
+       (sebelumnya tiap scroll event langsung hitung DOM — sangat berat di HP)
+     - useCallback pada SEMUA handler: handleImgLoad, imgClass, goToPage,
+       handleJump, findChap
+     - GPU hints: transform: translateZ(0) pada container utama
+     - Image loading:
+         * Long-strip: i < 3 → eager, sisanya → lazy
+         * Single/Double mode: eager + fetchPriority="high" + decoding="async"
+     - wheel event listener ditambahkan passive:true (tidak block main thread)
+     - DEFAULT_CONFIG dipindah ke luar komponen (tidak di-recreate tiap render)
+     - Loading state: spinner SVG animated (bukan teks biasa)
+     - Error state: SVG icon + tombol "Try again" (router.refresh())
+     - End of chapter buttons: styled Prev/Next dengan shadow orange
+
+  b. read/[chapterId]/page.tsx:
+     - Metadata: "Ch. 12 — Naruto | MavenManga" (lebih SEO-friendly)
+     - Error states dengan UI yang proper (bukan div teks polos)
+     - Background konsisten: #0f0f11
+
+--------------------------------------------------------------------------------
+8. LIBRARY PAGE — REDESIGN & FITUR BARU
+   File: src/app/library/page.tsx
+         src/components/library/LibraryContent.tsx
+--------------------------------------------------------------------------------
+FITUR BARU (tidak ada sebelumnya):
+  a. SORT — 3 opsi: Recent (by updatedAt) / Title (alphabetical) / Status
+  b. SEARCH — Filter real-time berdasarkan judul tanpa reload halaman
+  c. REMOVE BUTTON — Tombol × muncul saat hover pada setiap card;
+     klik langsung hapus dari library dan auto-save ke localStorage
+  d. STATUS SUMMARY BAR — Pill badges menampilkan count per status
+     (contoh: "• reading: 3  • completed: 6  • on hold: 1")
+  e. COUNT per tab — Badge angka di setiap tab status
+  f. Empty state kontekstual:
+     - Berbeda untuk: library kosong / tab kosong / tidak ada hasil search
+
+OPTIMASI:
+  - memo(LibraryCard) — tidak re-render kecuali data berubah
+  - useMemo untuk counts dan displayed list
+  - useCallback untuk handleRemove
+  - loading="lazy" + decoding="async" pada semua cover
+  - Metadata: "My Library — MavenManga" dengan deskripsi SEO
+
+TAMPILAN:
+  - Pill tabs (rounded-full) dengan Heroicons — sama seperti sebelumnya
+  - Grid 2 kolom mobile → 6 kolom desktop — sama seperti sebelumnya
+  - Status badge di pojok kanan atas card — sama seperti sebelumnya
+  - Search input + sort buttons → pill style (rounded-full) seragam dengan tabs
+  - Background: #0f0f11
+
+--------------------------------------------------------------------------------
+9. HOMEPAGE — OPTIMASI PERFORMA
+   File: src/app/page.tsx
+         src/components/MangaCard.tsx
+         src/components/MangaSection.tsx
+         src/components/DraggableScroll.tsx
+         src/app/globals.css
+         src/services/mangadex.ts
+--------------------------------------------------------------------------------
+OPTIMASI:
+  - Semua komponen: React.memo, useMemo, useCallback
+  - Image: loading="lazy", decoding="async", willChange: transform
+  - GPU composite layer pada kartu dan container scroll
+  - DraggableScroll: passive event listeners, cleanup proper
+  - MangaSection: skeleton loading state
+  - globals.css: tambah utilitas custom-scrollbar dan no-scrollbar
+  - services/mangadex.ts: caching dan revalidation strategy
+
+================================================================================
+  RINGKASAN TEKNIS
+================================================================================
+
+PRINSIP OPTIMASI YANG DITERAPKAN:
+  1. GPU Compositing  : transform: translateZ(0) / will-change: transform
+                        Memindahkan elemen ke layer GPU terpisah sehingga
+                        animasi tidak memblokir main thread (critical di HP
+                        dengan GPU terbatas)
+
+  2. Image Loading    : loading="lazy" untuk gambar di bawah fold,
+                        loading="eager" + fetchPriority="high" untuk gambar
+                        LCP (Largest Contentful Paint) agar skor Core Web
+                        Vitals meningkat
+
+  3. React Patterns   : React.memo mencegah re-render komponen jika props
+                        tidak berubah; useMemo cache hasil kalkulasi berat;
+                        useCallback cache fungsi agar referensi stabil
+
+  4. Event Optimization: passive: true pada scroll/wheel listeners agar
+                        browser bisa scroll tanpa menunggu JavaScript selesai
+
+  5. RAF Throttling   : requestAnimationFrame pada scroll handler reader
+                        memastikan kalkulasi DOM hanya terjadi sekali per
+                        frame (60fps) bukan tiap event scroll
+
+  6. Bundle Size      : Penghapusan react-markdown + remark-gfm menghemat
+                        ~60KB pada bundle halaman manga detail
+
+  7. API Efficiency   : Menghapus duplikasi fetch getMangaRecommendations
+                        yang sebelumnya dipanggil dua kali untuk data yang sama
+
+  8. Stacking Context : Perbaikan bug dropdown tertutup elemen lain dengan
+                        menghapus "contain: layout style" yang secara implisit
+                        membuat stacking context baru
+
+  9. Memory Safety    : Cancelled flag pada async fetch di ReaderViewer mencegah
+                        setState setelah komponen unmount (memory leak)
+
+================================================================================
+  FILE YANG DIUBAH (20 file)
+================================================================================
+
+  src/app/globals.css                          — Custom scrollbar utilities
+  src/app/library/page.tsx                     — Metadata SEO
+  src/app/manga/[id]/page.tsx                  — Metadata, background, OpenGraph
+  src/app/page.tsx                             — Homepage optimasi
+  src/app/read/[chapterId]/page.tsx            — Metadata, error states
+  src/app/search/page.tsx                      — Dynamic metadata, background
+  src/components/DraggableScroll.tsx           — Optimasi scroll performance
+  src/components/HeroCarousel.tsx              — Mobile layout, season label, Read
+  src/components/LatestUpdateCard.tsx          — Multi-kolom mobile
+  src/components/MangaCard.tsx                 — Flag map, SVG icons, memo
+  src/components/MangaSection.tsx              — Skeleton loader
+  src/components/SearchCard.tsx                — Memo, lazy loading
+  src/components/SearchContent.tsx            — useTransition, bug fixes
+  src/components/library/LibraryContent.tsx   — Redesign + fitur baru
+  src/components/manga/MangaHero.tsx          — Hapus react-markdown, optimasi
+  src/components/manga/MangaSidebarContent.tsx — Hapus duplikasi fetch, lazy img
+  src/components/manga/MangaTabs.tsx          — Memo cards, lazy loading
+  src/components/reader/ReaderViewer.tsx      — RAF throttle, cancellable fetch
+  src/services/mangadex.ts                    — Caching strategy
+  src/utils/chapterUtils.ts                   — Flag map lengkap
+
+================================================================================

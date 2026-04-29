@@ -82,6 +82,38 @@ export const getPopularNew = async () => getListOnly({
   'contentRating[]': ['safe', 'suggestive', 'erotica']
 }, { next: { revalidate: 21600 } });
 
+// Fetch the very first available chapter ID for a given manga (English preferred)
+export const getFirstChapterId = async (mangaId: string): Promise<string | null> => {
+  try {
+    const url = new URL(`${API_BASE}/manga/${mangaId}/feed`);
+    url.searchParams.append('limit', '1');
+    url.searchParams.append('offset', '0');
+    url.searchParams.append('order[volume]', 'asc');
+    url.searchParams.append('order[chapter]', 'asc');
+    url.searchParams.append('translatedLanguage[]', 'en');
+    ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r =>
+      url.searchParams.append('contentRating[]', r)
+    );
+    const res = await fetchDirect(url, { next: { revalidate: 86400 } });
+    const firstChapter = res.data?.[0];
+    if (firstChapter?.id) return firstChapter.id;
+
+    // Fallback: try any language if no English chapter found
+    const urlFallback = new URL(`${API_BASE}/manga/${mangaId}/feed`);
+    urlFallback.searchParams.append('limit', '1');
+    urlFallback.searchParams.append('offset', '0');
+    urlFallback.searchParams.append('order[volume]', 'asc');
+    urlFallback.searchParams.append('order[chapter]', 'asc');
+    ['safe', 'suggestive', 'erotica', 'pornographic'].forEach(r =>
+      urlFallback.searchParams.append('contentRating[]', r)
+    );
+    const resFallback = await fetchDirect(urlFallback, { next: { revalidate: 86400 } });
+    return resFallback.data?.[0]?.id || null;
+  } catch {
+    return null;
+  }
+};
+
 function getCurrentSeasonStartDate(): string {
   const now = new Date();
   const month = now.getMonth();

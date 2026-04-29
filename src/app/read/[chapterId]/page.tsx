@@ -36,17 +36,32 @@ export async function generateMetadata({ params }: { params: Promise<{ chapterId
     const mangaRel = chapter.relationships?.find((r: any) => r.type === 'manga');
     const mangaTitle = mangaRel?.id ? getSmartTitle(await getMangaDetail(mangaRel.id)) : "Manga";
     const chapNum = chapter.attributes?.chapter || "Oneshot";
-    return { title: `Chapter ${chapNum} - ${mangaTitle}`, description: `Read ${mangaTitle} Chapter ${chapNum} online free.` };
+    return {
+      title: `Ch. ${chapNum} — ${mangaTitle} | MavenManga`,
+      description: `Read ${mangaTitle} Chapter ${chapNum} online for free on MavenManga.`,
+    };
 }
 
 export default async function ReadPage({ params }: { params: Promise<{ chapterId: string }> }) {
   const { chapterId } = await params;
   const chapterMeta = await getChapterMetaData(chapterId);
-  if (!chapterMeta) return <div className="text-white text-center pt-20">Error loading metadata</div>;
+  if (!chapterMeta) return (
+    <div className="h-screen flex flex-col items-center justify-center bg-[#0f0f11] gap-3 text-center px-4">
+      <svg className="w-10 h-10 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p className="text-gray-400 font-bold">Chapter not found</p>
+      <p className="text-gray-600 text-sm">The chapter metadata could not be loaded.</p>
+    </div>
+  );
 
   const getRel = (type: string) => chapterMeta.relationships?.find((r: any) => r.type === type);
   const mangaId = getRel('manga')?.id;
-  if (!mangaId) return <div className="text-white text-center pt-20">Manga ID not found</div>;
+  if (!mangaId) return (
+    <div className="h-screen flex flex-col items-center justify-center bg-[#0f0f11] gap-3">
+      <p className="text-gray-400 font-bold">Manga reference not found</p>
+    </div>
+  );
 
   const [manga, feed] = await Promise.all([getMangaDetail(mangaId), getMangaFeed(mangaId, 0, 'asc', 500)]);
 

@@ -1,142 +1,155 @@
 // src/components/DraggableScroll.tsx
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
 
-export default function DraggableScroll({ 
-  children, 
-  className = "" 
-}: { 
-  children: React.ReactNode, 
-  className?: string 
+const DraggableScroll = memo(function DraggableScroll({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const isDown = useRef(false);
   const startX = useRef(0);
-  const scrollLeftState = useRef(0);
-  const animationFrameId = useRef<number | null>(null);
+  const scrollLeftAtStart = useRef(0);
+  const rafId = useRef<number | null>(null);
+  const hasMoved = useRef(false);
+
+  // Passive scroll loop protection for touch/mouse up
   const items = React.Children.toArray(children);
   const shouldLoop = items.length > 5;
 
+  // Center the loop to the middle copy on mount
   useEffect(() => {
-    const container = scrollRef.current;
-    if (!container || !shouldLoop) return;
+    const el = scrollRef.current;
+    if (!el || !shouldLoop) return;
+    el.scrollLeft = el.scrollWidth / 3;
+  }, [shouldLoop]);
 
-    if (container.scrollLeft === 0) {
-        const singleSetWidth = container.scrollWidth / 3;
-        container.scrollLeft = singleSetWidth;
-    }
+  // Infinite scroll snap on scroll event
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !shouldLoop) return;
 
-    const handleScrollLogic = () => {
-      if (isDown.current) return; 
-
-      const singleSetWidth = container.scrollWidth / 3;
-      if (container.scrollLeft >= singleSetWidth * 2 - 50) {
-        container.scrollLeft = singleSetWidth + (container.scrollLeft - singleSetWidth * 2);
-      } else if (container.scrollLeft <= 50) {
-         container.scrollLeft = singleSetWidth + container.scrollLeft;
-      }
+    const onScroll = () => {
+      if (isDown.current) return;
+      const w = el.scrollWidth / 3;
+      if (el.scrollLeft >= w * 2 - 20) el.scrollLeft -= w;
+      else if (el.scrollLeft <= 20) el.scrollLeft += w;
     };
 
-    container.addEventListener('scroll', handleScrollLogic);
-    return () => container.removeEventListener('scroll', handleScrollLogic);
-  }, [items.length, shouldLoop]);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [shouldLoop]);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  // Global mouse move — runs in RAF for GPU-friendliness
+  const onGlobalMouseMove = useCallback((e: MouseEvent) => {
     if (!isDown.current || !scrollRef.current) return;
     e.preventDefault();
-    
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.5;
 
-    if (Math.abs(walk) > 5) { 
-        if (!isDragging) setIsDragging(true); 
-        
-        const targetScroll = scrollLeftState.current - walk;
-        if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = requestAnimationFrame(() => {
-            if (scrollRef.current) {
-                scrollRef.current.scrollLeft = targetScroll;
-            }
-        });
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.8;
+
+    if (Math.abs(walk) > 4) {
+      hasMoved.current = true;
+      if (!isDragging) setIsDragging(true);
     }
 
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    rafId.current = requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft = scrollLeftAtStart.current - walk;
+      }
+    });
   }, [isDragging]);
 
-  const handleMouseUp = useCallback(() => {
+  const onGlobalMouseUp = useCallback(() => {
     isDown.current = false;
+    if (rafId.current) cancelAnimationFrame(rafId.current);
 
-    setTimeout(() => {
-        setIsDragging(false);
-    }, 0);
+    setTimeout(() => setIsDragging(false), 0);
 
-    if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-
-    const container = scrollRef.current;
-    if (container && shouldLoop) {
-        const singleSetWidth = container.scrollWidth / 3;
-        if (container.scrollLeft >= singleSetWidth * 2 - 50) {
-            container.scrollLeft = singleSetWidth + (container.scrollLeft - singleSetWidth * 2);
-        } else if (container.scrollLeft <= 50) {
-            container.scrollLeft = singleSetWidth + container.scrollLeft;
-        }
+    // Snap back to loop center if needed
+    const el = scrollRef.current;
+    if (el && shouldLoop) {
+      const w = el.scrollWidth / 3;
+      if (el.scrollLeft >= w * 2 - 20) el.scrollLeft -= w;
+      else if (el.scrollLeft <= 20) el.scrollLeft += w;
     }
   }, [shouldLoop]);
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousemove', onGlobalMouseMove, { passive: false });
+    window.addEventListener('mouseup', onGlobalMouseUp);
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+      window.removeEventListener('mousemove', onGlobalMouseMove);
+      window.removeEventListener('mouseup', onGlobalMouseUp);
+      if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, [handleMouseMove, handleMouseUp]);
+  }, [onGlobalMouseMove, onGlobalMouseUp]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     isDown.current = true;
+    hasMoved.current = false;
     startX.current = e.pageX - scrollRef.current.offsetLeft;
-    scrollLeftState.current = scrollRef.current.scrollLeft;
+    scrollLeftAtStart.current = scrollRef.current.scrollLeft;
   };
 
+  // Block click if user dragged
   const onClickCapture = (e: React.MouseEvent) => {
-      if (isDragging) {
-          e.preventDefault();
-          e.stopPropagation();
-      }
-  };
-
-  const onDragStart = (e: React.DragEvent) => {
-    e.preventDefault();
-    return false;
+    if (hasMoved.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   return (
     <div
       ref={scrollRef}
       className={`
-        flex overflow-x-auto pb-4 gap-4 px-4 md:px-0 scrollbar-hide select-none
-        ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} 
+        flex overflow-x-auto pb-3 scrollbar-hide select-none
+        ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
         ${className}
       `}
+      style={{
+        // Promote scrolling to its own GPU layer
+        willChange: 'scroll-position',
+        // Prevent layout from triggering paint on scroll
+        contain: 'layout style',
+      }}
       onMouseDown={onMouseDown}
-      onClick={onClickCapture} 
-      onDragStart={onDragStart} 
-      style={{ willChange: 'scroll-position' }} 
+      onClickCapture={onClickCapture}
+      onDragStart={(e) => e.preventDefault()}
     >
       {shouldLoop ? (
         <div className={`flex gap-4 ${isDragging ? 'pointer-events-none' : ''}`}>
-             {items.map((child, i) => <div key={`clone-left-${i}`} className="flex-shrink-0">{child}</div>)}
-             {items.map((child, i) => <div key={`main-${i}`} className="flex-shrink-0">{child}</div>)}
-             {items.map((child, i) => <div key={`clone-right-${i}`} className="flex-shrink-0">{child}</div>)}
+          {items.map((child, i) => (
+            <div key={`a-${i}`} className="flex-shrink-0" style={{ transform: 'translateZ(0)' }}>
+              {child}
+            </div>
+          ))}
+          {items.map((child, i) => (
+            <div key={`b-${i}`} className="flex-shrink-0" style={{ transform: 'translateZ(0)' }}>
+              {child}
+            </div>
+          ))}
+          {items.map((child, i) => (
+            <div key={`c-${i}`} className="flex-shrink-0" style={{ transform: 'translateZ(0)' }}>
+              {child}
+            </div>
+          ))}
         </div>
       ) : (
         <div className={`flex gap-4 ${isDragging ? 'pointer-events-none' : ''}`}>
-            {children}
+          {children}
         </div>
       )}
     </div>
   );
-}
+});
+
+export default DraggableScroll;

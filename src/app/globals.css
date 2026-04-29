@@ -34,6 +34,7 @@ body {
 .scrollbar-hide {
     -ms-overflow-style: none; 
     scrollbar-width: none;  
+    -webkit-overflow-scrolling: touch;
 }
 
 @layer utilities {
@@ -53,5 +54,32 @@ body {
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: #52555b; 
+  }
+}
+
+/* === GPU Acceleration Utilities === */
+
+/* Force hardware compositing layer */
+.gpu-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optimized image rendering */
+img {
+  content-visibility: auto;
+}
+
+/* Smooth scroll for the whole page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Reduce animation cost on low-end devices */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

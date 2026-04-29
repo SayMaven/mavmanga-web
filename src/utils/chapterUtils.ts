@@ -19,18 +19,37 @@ export const formatTimeAgo = (dateString: string) => {
 };
 
 export const getFlagUrl = (langCode: string) => {
-  const map: Record<string, string> = { 
-  'en':'gb','ja':'jp','ko':'kr','zh':'cn','zh-hk':'hk','id':'id','fr':'fr','es':'es','es-la':'mx',
-  'pt-br':'br','pt':'pt','ru':'ru','de':'de','it':'it','vi':'vn','th':'th',
-
-  'tl':'ph','ms':'my','hi':'in','my':'mm','ne':'np','mn':'mn','ar':'sa','fa':'ir','he':'il','bn':'bd',
-  'kk':'kz','ta':'in',
-
-  'tr':'tr','pl':'pl','uk':'ua','cs':'cz','hu':'hu','ro':'ro','bg':'bg','nl':'nl','sv':'se','no':'no',
-  'da':'dk','fi':'fi','el':'gr','sr':'rs','hr':'hr','lt':'lt','lv':'lv','et':'ee','sk':'sk','sl':'si',
-  'ca':'es-ct','ka':'ge','az':'az', 'ur': 'pk',
-
-  'ja-ro':'jp','ko-ro':'kr','zh-ro':'cn','la':'va','eo':'un'
+  // MangaDex supported language → ISO 3166-1 alpha-2 country code (flagcdn.com)
+  const map: Record<string, string> = {
+    // East Asia
+    'ja':'jp', 'ko':'kr', 'zh':'cn', 'zh-hk':'hk',
+    // Southeast Asia
+    'id':'id', 'vi':'vn', 'th':'th', 'tl':'ph', 'ms':'my',
+    'my':'mm', 'km':'kh', 'lo':'la',
+    // South Asia
+    'hi':'in', 'bn':'bd', 'ta':'lk', 'ne':'np', 'ur':'pk', 'si':'lk',
+    // Middle East & Central Asia
+    'ar':'sa', 'fa':'ir', 'he':'il', 'tr':'tr',
+    'az':'az', 'kk':'kz', 'uz':'uz', 'ky':'kg', 'ka':'ge',
+    // North/Central Asia
+    'mn':'mn',
+    // Western Europe
+    'en':'gb', 'fr':'fr', 'de':'de', 'es':'es', 'es-la':'mx',
+    'pt':'pt', 'pt-br':'br', 'it':'it', 'nl':'nl', 'ca':'es-ct',
+    // Northern Europe
+    'sv':'se', 'no':'no', 'nn':'no', 'da':'dk', 'fi':'fi',
+    // Eastern Europe
+    'ru':'ru', 'pl':'pl', 'uk':'ua', 'cs':'cz', 'sk':'sk',
+    'hu':'hu', 'ro':'ro', 'bg':'bg',
+    // South/SW Europe
+    'el':'gr', 'sr':'rs', 'hr':'hr', 'sl':'si', 'mk':'mk',
+    'sq':'al', 'lt':'lt', 'lv':'lv', 'et':'ee',
+    // Africa
+    'af':'za', 'sw':'tz', 'am':'et',
+    // Special / Constructed
+    'la':'va', 'eo':'un',
+    // Romanized Variants
+    'ja-ro':'jp', 'ko-ro':'kr', 'zh-ro':'cn',
   };
   const code = map[langCode];
   return code ? `https://flagcdn.com/w20/${code}.png` : null;

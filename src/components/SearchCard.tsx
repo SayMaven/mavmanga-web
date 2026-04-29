@@ -2,110 +2,152 @@
 'use client';
 
 import Link from "next/link";
+import { memo } from "react";
+
+// MangaDex supported language → ISO 3166-1 alpha-2 country code (flagcdn.com)
+const FLAG_MAP: Record<string, string> = {
+  'ja':'jp', 'ko':'kr', 'zh':'cn', 'zh-hk':'hk',
+  'id':'id', 'vi':'vn', 'th':'th', 'tl':'ph', 'ms':'my',
+  'my':'mm', 'km':'kh', 'lo':'la',
+  'hi':'in', 'bn':'bd', 'ta':'lk', 'ne':'np', 'ur':'pk', 'si':'lk',
+  'ar':'sa', 'fa':'ir', 'he':'il', 'tr':'tr',
+  'az':'az', 'kk':'kz', 'uz':'uz', 'ky':'kg', 'ka':'ge',
+  'mn':'mn',
+  'en':'gb', 'fr':'fr', 'de':'de', 'es':'es', 'es-la':'mx',
+  'pt':'pt', 'pt-br':'br', 'it':'it', 'nl':'nl', 'ca':'es-ct',
+  'sv':'se', 'no':'no', 'nn':'no', 'da':'dk', 'fi':'fi',
+  'ru':'ru', 'pl':'pl', 'uk':'ua', 'cs':'cz', 'sk':'sk',
+  'hu':'hu', 'ro':'ro', 'bg':'bg',
+  'el':'gr', 'sr':'rs', 'hr':'hr', 'sl':'si', 'mk':'mk',
+  'sq':'al', 'lt':'lt', 'lv':'lv', 'et':'ee',
+  'af':'za', 'sw':'tz', 'am':'et',
+  'la':'va', 'eo':'un',
+  'ja-ro':'jp', 'ko-ro':'kr', 'zh-ro':'cn',
+};
 
 const getFlagUrl = (lang: string) => {
-  const map: Record<string, string> = { 
-  'en':'gb','ja':'jp','ko':'kr','zh':'cn','zh-hk':'hk','id':'id','fr':'fr','es':'es','es-la':'mx',
-  'pt-br':'br','pt':'pt','ru':'ru','de':'de','it':'it','vi':'vn','th':'th',
-
-  'tl':'ph','ms':'my','hi':'in','my':'mm','ne':'np','mn':'mn','ar':'sa','fa':'ir','he':'il','bn':'bd',
-  'kk':'kz','ta':'in',
-
-  'tr':'tr','pl':'pl','uk':'ua','cs':'cz','hu':'hu','ro':'ro','bg':'bg','nl':'nl','sv':'se','no':'no',
-  'da':'dk','fi':'fi','el':'gr','sr':'rs','hr':'hr','lt':'lt','lv':'lv','et':'ee','sk':'sk','sl':'si',
-  'ca':'es-ct','ka':'ge','az':'az','ur': 'pk',
-
-  'ja-ro':'jp','ko-ro':'kr','zh-ro':'cn','la':'va','eo':'un'
-  };
-  const countryCode = map[lang] || 'xx'; 
-  return `https://flagcdn.com/w40/${countryCode}.png`;
+  const code = FLAG_MAP[lang] || 'xx';
+  return `https://flagcdn.com/w40/${code}.png`;
 };
 
-const getDisplayTitles = (manga: any) => {
-    const attr = manga.attributes;
-    const ogLang = attr.originalLanguage;
-    const altTitles = attr.altTitles || [];
-
-    const findTitle = (lang: string) => {
-        return attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
-    };
-
-    const fallbackTitle = Object.values(attr.title)[0] as string || "No Title";
-    let mainTitle = "";
-
-    if (ogLang === 'ja') {
-        mainTitle = findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallbackTitle;
-    } 
-    else {
-        mainTitle = findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallbackTitle;
-    }
-
-    return mainTitle;
-};
-
-export default function SearchCard({ manga }: { manga: any }) {
+const getDisplayTitle = (manga: any): string => {
   const attr = manga.attributes;
-  const title = getDisplayTitles(manga);
-  const description = attr.description?.en || attr.description?.id || "No description available.";
+  const ogLang = attr.originalLanguage;
+  const altTitles = attr.altTitles || [];
+  const findTitle = (lang: string) =>
+    attr.title[lang] || altTitles.find((t: any) => t[lang])?.[lang];
+  const fallback = (Object.values(attr.title)[0] as string) || 'No Title';
+  return ogLang === 'ja'
+    ? findTitle('ja-ro') || findTitle('en') || findTitle('ja') || fallback
+    : findTitle('en') || findTitle(`${ogLang}-ro`) || findTitle(ogLang) || fallback;
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  ongoing:   'bg-blue-500/20 text-blue-400',
+  completed: 'bg-green-500/20 text-green-400',
+  hiatus:    'bg-yellow-500/20 text-yellow-400',
+  cancelled: 'bg-red-500/20 text-red-400',
+};
+
+const RATING_STYLE: Record<string, string> = {
+  safe:          'bg-teal-500/20 text-teal-400',
+  suggestive:    'bg-orange-500/20 text-orange-400',
+  erotica:       'bg-red-500/20 text-red-400',
+  pornographic:  'bg-red-700/30 text-red-400',
+};
+
+const SearchCard = memo(function SearchCard({ manga, priority = false }: { manga: any; priority?: boolean }) {
+  const attr = manga.attributes;
+  const title = getDisplayTitle(manga);
+  const description = (attr.description?.en || attr.description?.id || '').replace(/[*_~`\[\]]/g, '').trim();
   const status = attr.status;
-  const originalLang = attr.originalLanguage; 
+  const rating = attr.contentRating;
+  const originalLang = attr.originalLanguage;
+
   const coverRel = manga.relationships.find((rel: any) => rel.type === 'cover_art');
   const fileName = coverRel?.attributes?.fileName;
   const myProxy = process.env.NEXT_PUBLIC_PROXY;
-  const imageUrl = fileName 
+  const imageUrl = fileName
     ? `${myProxy}https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg`
     : `${myProxy}https://og.mangadex.org/og-image/manga/${manga.id}`;
 
-  const rating = attr.contentRating;
+  const statusClass = STATUS_STYLE[status] || 'bg-gray-500/20 text-gray-400';
+  const ratingClass = RATING_STYLE[rating] || 'bg-gray-500/20 text-gray-400';
 
   return (
-    <div className="bg-[#191A1C] rounded-lg overflow-hidden flex gap-4 p-3 hover:bg-[#232529] border border-white/5 transition-all group shadow-lg">
-      <Link href={`/manga/${manga.id}`} className="w-24 md:w-32 flex-shrink-0 relative aspect-[2/3] overflow-hidden rounded shadow-2xl">
-        <img 
-          src={imageUrl} 
-          alt={title} 
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
-        />
-
-        <div className="absolute bottom-0 right-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent w-full flex justify-end">
-             <img 
-               src={getFlagUrl(originalLang)} 
-               alt={originalLang} 
-               className="w-5 h-auto shadow-sm rounded-[2px]" 
-             />
+    <div
+      className="bg-[#191A1C] rounded-xl overflow-hidden flex gap-3 p-3 hover:bg-[#1f2024] border border-white/[0.05] hover:border-white/10 transition-colors duration-200 group"
+      style={{ transform: 'translateZ(0)', willChange: 'transform' }}
+    >
+      {/* Cover */}
+      <Link
+        href={`/manga/${manga.id}`}
+        className="flex-shrink-0 relative overflow-hidden rounded-lg shadow-xl"
+        style={{ transform: 'translateZ(0)' }}
+      >
+        <div className="w-[72px] md:w-[100px] aspect-[2/3] bg-gray-900 overflow-hidden rounded-lg">
+          <img
+            src={imageUrl}
+            alt={title}
+            referrerPolicy="no-referrer"
+            loading={priority ? 'eager' : 'lazy'}
+            decoding="async"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            style={{ willChange: 'transform' }}
+          />
+        </div>
+        {/* Flag overlay */}
+        <div className="absolute bottom-0 right-0 p-1 bg-gradient-to-t from-black/80 to-transparent w-full flex justify-end pointer-events-none">
+          <img
+            src={getFlagUrl(originalLang)}
+            alt={originalLang}
+            loading="lazy"
+            className="w-4 h-auto shadow-sm rounded-[2px] opacity-90"
+          />
         </div>
       </Link>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-1 mb-2">
+      {/* Info */}
+      <div className="flex-1 flex flex-col min-w-0 gap-1.5">
+        {/* Title + badges */}
+        <div className="flex flex-col gap-1">
           <Link href={`/manga/${manga.id}`}>
-            <h3 className="text-white font-bold text-lg md:text-xl line-clamp-1 group-hover:text-orange-500 transition" title={title}>
+            <h3
+              className="text-white font-bold text-sm md:text-base line-clamp-2 group-hover:text-orange-400 transition-colors duration-150 leading-tight"
+              title={title}
+            >
               {title}
             </h3>
           </Link>
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${status === 'ongoing' ? 'bg-blue-600/20 text-blue-400' : 'bg-green-600/20 text-green-400'}`}>
+          <div className="flex flex-wrap gap-1">
+            <span className={`px-1.5 py-0.5 rounded text-[9px] md:text-[10px] font-bold uppercase ${statusClass}`}>
               {status}
             </span>
-            <span className="bg-orange-600/20 text-orange-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-              {rating}
+            <span className={`px-1.5 py-0.5 rounded text-[9px] md:text-[10px] font-bold uppercase ${ratingClass}`}>
+              {rating === 'pornographic' ? '18+' : rating}
             </span>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {attr.tags.slice(0, 5).map((tag: any) => (
-            <span key={tag.id} className="text-[10px] font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded text-gray-400 uppercase tracking-tighter">
+        {/* Tags */}
+        <div className="flex flex-wrap gap-1">
+          {attr.tags.slice(0, 4).map((tag: any) => (
+            <span
+              key={tag.id}
+              className="text-[9px] md:text-[10px] font-semibold bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.5 rounded text-gray-400 uppercase tracking-tight"
+            >
               {tag.attributes.name.en}
             </span>
           ))}
         </div>
 
-        <p className="text-gray-400 text-sm line-clamp-2 md:line-clamp-3 leading-relaxed">
-          {description.replace(/[*_~`]/g, '')}
+        {/* Description */}
+        <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 md:line-clamp-3 hidden sm:block">
+          {description || 'No description available.'}
         </p>
       </div>
     </div>
   );
-}
+});
+
+export default SearchCard;

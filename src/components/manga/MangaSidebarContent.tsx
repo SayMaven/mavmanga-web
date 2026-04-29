@@ -1,23 +1,41 @@
 // src/components/manga/MangaSidebarContent.tsx
-import React from "react";
-import Link from "next/link";
-import { getLinkInfo } from "@/utils/mangaIcons";
-import { getMangaRecommendations } from "@/services/mangadex";
+import React from 'react';
+import Link from 'next/link';
+import { getLinkInfo } from '@/utils/mangaIcons';
 
 const getFlagUrl = (lang: string) => {
   if (!lang) return null;
+  // MangaDex supported language → ISO 3166-1 alpha-2 country code (flagcdn.com)
   const map: Record<string, string> = {
-  'en':'gb','ja':'jp','ko':'kr','zh':'cn','zh-hk':'hk','id':'id','fr':'fr','es':'es','es-la':'mx',
-  'pt-br':'br','pt':'pt','ru':'ru','de':'de','it':'it','vi':'vn','th':'th',
-
-  'tl':'ph','ms':'my','hi':'in','my':'mm','ne':'np','mn':'mn','ar':'sa','fa':'ir','he':'il','bn':'bd',
-  'kk':'kz','ta':'in',
-
-  'tr':'tr','pl':'pl','uk':'ua','cs':'cz','hu':'hu','ro':'ro','bg':'bg','nl':'nl','sv':'se','no':'no',
-  'da':'dk','fi':'fi','el':'gr','sr':'rs','hr':'hr','lt':'lt','lv':'lv','et':'ee','sk':'sk','sl':'si',
-  'ca':'es-ct','ka':'ge','az':'az',
-
-  'ja-ro':'jp','ko-ro':'kr','zh-ro':'cn','la':'va','eo':'un'
+    // East Asia
+    'ja':'jp', 'ko':'kr', 'zh':'cn', 'zh-hk':'hk',
+    // Southeast Asia
+    'id':'id', 'vi':'vn', 'th':'th', 'tl':'ph', 'ms':'my',
+    'my':'mm', 'km':'kh', 'lo':'la',
+    // South Asia
+    'hi':'in', 'bn':'bd', 'ta':'lk', 'ne':'np', 'ur':'pk', 'si':'lk',
+    // Middle East & Central Asia
+    'ar':'sa', 'fa':'ir', 'he':'il', 'tr':'tr',
+    'az':'az', 'kk':'kz', 'uz':'uz', 'ky':'kg', 'ka':'ge',
+    // North/Central Asia
+    'mn':'mn',
+    // Western Europe
+    'en':'gb', 'fr':'fr', 'de':'de', 'es':'es', 'es-la':'mx',
+    'pt':'pt', 'pt-br':'br', 'it':'it', 'nl':'nl', 'ca':'es-ct',
+    // Northern Europe
+    'sv':'se', 'no':'no', 'nn':'no', 'da':'dk', 'fi':'fi',
+    // Eastern Europe
+    'ru':'ru', 'pl':'pl', 'uk':'ua', 'cs':'cz', 'sk':'sk',
+    'hu':'hu', 'ro':'ro', 'bg':'bg',
+    // South/SW Europe
+    'el':'gr', 'sr':'rs', 'hr':'hr', 'sl':'si', 'mk':'mk',
+    'sq':'al', 'lt':'lt', 'lv':'lv', 'et':'ee',
+    // Africa
+    'af':'za', 'sw':'tz', 'am':'et',
+    // Special / Constructed
+    'la':'va', 'eo':'un',
+    // Romanized Variants
+    'ja-ro':'jp', 'ko-ro':'kr', 'zh-ro':'cn',
   };
   const code = map[lang.toLowerCase()];
   return code ? `https://flagcdn.com/w40/${code}.png` : null;
@@ -30,7 +48,7 @@ const getLangPriority = (lang: string) => {
     return 100;
 };
 
-export default async function MangaSidebarContent({ manga }: { manga: any }) {
+export default async function MangaSidebarContent({ manga, recommendations = [] }: { manga: any; recommendations?: any[] }) {
   const attr = manga.attributes || {};
   const tags = attr.tags || [];
 
@@ -54,14 +72,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
   const retailLinks = linkKeys.filter(k => retailKeys.includes(k) || !trackKeys.includes(k)); 
 
 
-  const mainTitle = attr.title?.en || Object.values(attr.title || {})[0] || "";
-  const recommendationTags = tags
-    .filter((t: any) => t.attributes.group === 'genre' || t.attributes.group === 'theme')
-    .map((t: any) => t.id);
-  const demographic = attr.publicationDemographic;
-  let recommendations = await getMangaRecommendations(mainTitle as string, recommendationTags, demographic, manga.id);
-
-  recommendations = recommendations.slice(0, 6);
+  const mainTitle = attr.title?.en || Object.values(attr.title || {})[0] || '';
 
   const LinkButton = ({ linkKey, url }: { linkKey: string, url: string }) => {
       const info = getLinkInfo(linkKey, url);
@@ -71,7 +82,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
           >
               <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-white/5 rounded-sm p-0.5 group-hover:bg-white/10 transition">
                   {info.iconSrc ? (
-                      <img src={info.iconSrc} alt={info.label} className="w-full h-full object-contain" />
+      <img src={info.iconSrc} alt={info.label} loading="lazy" className="w-full h-full object-contain" />
                   ) : (
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4 text-gray-400">
                           <circle cx="12" cy="12" r="10" strokeWidth="2"/>
@@ -196,7 +207,7 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
                         return (
                             <div key={idx} className="flex items-start gap-3 border-b border-white/5 last:border-0 pb-2">
                                 <div className="flex-shrink-0 mt-0.5">
-                                    {flagUrl ? <img src={flagUrl} alt={langKey} className="w-6 h-4 object-cover rounded shadow-sm opacity-90" /> : <div className="w-6 h-4 bg-[#2b2d33] border border-white/10 rounded flex items-center justify-center"><span className="text-[9px] font-bold uppercase text-gray-400 leading-none">{langKey.slice(0,2)}</span></div>}
+                              {flagUrl ? <img src={flagUrl} alt={langKey} loading="lazy" decoding="async" className="w-6 h-4 object-cover rounded shadow-sm opacity-90" /> : <div className="w-6 h-4 bg-[#2b2d33] border border-white/10 rounded flex items-center justify-center"><span className="text-[9px] font-bold uppercase text-gray-400 leading-none">{langKey.slice(0,2)}</span></div>}
                                 </div>
                                 <span className="text-sm text-gray-300 font-medium leading-tight break-words">{title}</span>
                             </div>
@@ -208,32 +219,41 @@ export default async function MangaSidebarContent({ manga }: { manga: any }) {
 
         {/* 8. RECOMMENDATIONS */}
         {recommendations.length > 0 && (
-            <div className="space-y-3 pt-6 border-t border-white/5">
+            <div className="space-y-3 pt-4 border-t border-white/5">
                 <h3 className="text-white font-bold text-sm mb-3">Recommendations</h3>
-                <div className="grid grid-cols-2 gap-3">
-                    {recommendations.map((rec: any) => {
-                         const recTitle = rec.attributes.title.en || Object.values(rec.attributes.title)[0];
-                         const recCover = rec.relationships.find((r:any) => r.type === 'cover_art')?.attributes?.fileName;
-                         const myProxy = process.env.NEXT_PUBLIC_PROXY;
-                         const recImage = recCover 
-                            ? `${myProxy}https://uploads.mangadex.org/covers/${rec.id}/${recCover}.256.jpg` 
-                            : `https://placehold.co/200x300?text=No+Cover`;
-
-                         return (
-                            <Link key={rec.id} href={`/manga/${rec.id}`} className="group relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-white/5 bg-[#232529]">
-                                <img src={recImage} referrerPolicy="no-referrer" alt={recTitle} className="w-full h-full object-cover transition duration-300 group-hover:scale-110" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
+                <div className="grid grid-cols-2 gap-2.5">
+                    {recommendations.slice(0, 6).map((rec: any) => {
+                        const recTitle = rec.attributes.title.en || Object.values(rec.attributes.title)[0] as string;
+                        const recCover = rec.relationships.find((r: any) => r.type === 'cover_art')?.attributes?.fileName;
+                        const myProxy = process.env.NEXT_PUBLIC_PROXY;
+                        const recImage = recCover
+                            ? `${myProxy}https://uploads.mangadex.org/covers/${rec.id}/${recCover}.256.jpg`
+                            : `https://placehold.co/200x300/1a1b1e/444?text=No+Cover`;
+                        return (
+                            <a key={rec.id} href={`/manga/${rec.id}`}
+                                className="group relative aspect-[2/3] rounded-lg overflow-hidden shadow-lg border border-white/[0.06] bg-[#1a1b1e] hover:border-orange-500/30 transition-colors"
+                            >
+                                <img
+                                    src={recImage}
+                                    referrerPolicy="no-referrer"
+                                    alt={recTitle}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
                                 <div className="absolute bottom-0 left-0 right-0 p-2">
-                                    <h4 className="text-[10px] font-bold text-white line-clamp-2 leading-tight group-hover:text-orange-400 transition">
+                                    <p className="text-[10px] font-bold text-white line-clamp-2 leading-tight group-hover:text-orange-400 transition-colors">
                                         {recTitle}
-                                    </h4>
+                                    </p>
                                 </div>
-                            </Link>
-                         );
+                            </a>
+                        );
                     })}
                 </div>
             </div>
         )}
+
     </div>
   );
 }

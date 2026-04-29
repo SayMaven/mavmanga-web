@@ -22,9 +22,16 @@ type SearchParams = Promise<{
   availableTranslatedLanguage?: string; 
 }>;
 
-export const metadata: Metadata = {
-  title: "Search", 
-};
+export async function generateMetadata(props: { searchParams: SearchParams }): Promise<Metadata> {
+  const params = await props.searchParams;
+  const q = params.q;
+  return {
+    title: q ? `Search: "${q}" — MavenManga` : 'Advanced Search — MavenManga',
+    description: q
+      ? `Search results for "${q}" on MavenManga`
+      : 'Search and filter manga by title, genre, author, status and more on MavenManga.',
+  };
+}
 
 export default async function SearchPage(props: { searchParams: SearchParams }) {
   const params = await props.searchParams;
@@ -52,11 +59,11 @@ export default async function SearchPage(props: { searchParams: SearchParams }) 
   const total = response?.total || 0;
 
   return (
-    <main className="min-h-screen bg-[#121212] text-white font-sans">
-      <SearchContent 
-         initialResults={results} 
-         totalResults={total}
-         currentPage={currentPage}
+    <main className="min-h-screen bg-[#0f0f11] text-white font-sans">
+      <SearchContent
+        initialResults={results}
+        totalResults={total}
+        currentPage={currentPage}
       />
     </main>
   );
