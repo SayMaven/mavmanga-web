@@ -70,7 +70,8 @@ export default async function ReadPage({ params }: { params: Promise<{ chapterId
         chapterId={chapterId} currentChapter={chapterMeta.attributes} currentChapterId={chapterMeta.id}       
         chapterList={feed.data} mangaId={mangaId} mangaTitle={getSmartTitle(manga)} 
         scanlationGroup={getRel('scanlation_group')?.attributes?.name || "No Group"}
+        scanlationGroupId={getRel('scanlation_group')?.id}
         uploaderName={getRel('user')?.attributes?.username || "Unknown User"} 
     />
   );
-}
+}

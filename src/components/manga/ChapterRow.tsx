@@ -73,12 +73,16 @@ export default function ChapterRow({ chap, chapNum, isRead, onToggleRead, onMark
                             )}
                         </button>
 
-                        <div className="w-5 h-3.5 shrink-0" title={lang}>
-                            <img 
-                                src={getFlagUrl(lang) ?? ''} 
-                                alt={lang} 
-                                className="w-full h-full object-cover rounded-[2px]" 
-                            />
+                        <div className="w-5 h-3.5 shrink-0 flex items-center justify-center" title={lang}>
+                            {getFlagUrl(lang) ? (
+                                <img 
+                                    src={getFlagUrl(lang)!} 
+                                    alt={lang} 
+                                    className="w-full h-full object-cover rounded-[2px]" 
+                                />
+                            ) : (
+                                <span className="text-[8px] font-bold text-gray-400 uppercase leading-none">{lang}</span>
+                            )}
                         </div>
 
                         {/* Judul Chapter */}

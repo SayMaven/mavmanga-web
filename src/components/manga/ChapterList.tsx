@@ -312,18 +312,25 @@ export default function ChapterList({
 
                                                         <div className="flex items-center gap-3">
                                                             <div className={`flex items-center gap-2 transition-opacity duration-300 ${isChCollapsed ? 'opacity-100' : 'opacity-0'}`}>
-                                                                {langSummary.map(([lang, count]) => (
-                                                                    <div key={lang} className="flex items-center gap-1">
-                                                                        <div className="w-5.5 h-3.5" title={lang}>
-                                                                            <img 
-                                                                                src={getFlagUrl(lang) ?? ''} 
-                                                                                alt={lang} 
-                                                                                className="w-full h-full object-cover rounded-[1px] opacity-80" 
-                                                                            />
+                                                                {langSummary.map(([lang, count]) => {
+                                                                    const flagUrl = getFlagUrl(lang);
+                                                                    return (
+                                                                        <div key={lang} className="flex items-center gap-1">
+                                                                            <div className="w-5.5 h-3.5" title={lang}>
+                                                                                {flagUrl ? (
+                                                                                    <img 
+                                                                                        src={flagUrl}
+                                                                                        alt={lang} 
+                                                                                        className="w-full h-full object-cover rounded-[1px] opacity-80" 
+                                                                                    />
+                                                                                ) : (
+                                                                                    <span className="text-[9px] font-bold text-gray-400 uppercase">{lang}</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <span className="text-[10px] font-bold text-white">{count}</span>
                                                                         </div>
-                                                                        <span className="text-[10px] font-bold text-white">{count}</span>
-                                                                    </div>
-                                                                ))}
+                                                                    );
+                                                                })}
                                                             </div>
 
                                                             <svg className={`w-4 h-4 text-white transition-transform duration-300 ${isChCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>

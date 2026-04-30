@@ -140,17 +140,24 @@ export default function ReaderSidebar({
 
     return (
         <>
+            {/*
+             * BUG FIX #2 (mobile): Backdrop is pointer-events-none
+             * so swipe gestures and clicks pass through to the reader content,
+             * allowing scrolling even when the sidebar is open.
+             * Closing the sidebar is handled by clicking the reader area in ReaderViewer.
+             */}
             <div 
-                className={`fixed inset-0 z-[90] transition-opacity duration-300 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
-                onClick={onClose}
-            >
-                <div className="absolute inset-0 bg-transparent" /> 
-            </div>
+                className={`fixed inset-0 z-[90] transition-opacity duration-300 pointer-events-none ${
+                    isOpen ? 'opacity-100' : 'opacity-0'
+                }`}
+            />
 
             <div 
                 ref={sidebarRef}
                 onWheel={handleScrollPropagation}
-                className={`fixed top-0 right-0 h-full w-[320px] bg-[#191A1C] border-l border-[#2f3136] z-[100] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                className={`fixed top-0 right-0 h-full w-[320px] bg-[#191A1C] border-l border-[#2f3136] z-[100] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+                    isOpen ? 'translate-x-0' : 'translate-x-full'
+                }`}
             >
 
                 <div className="flex items-start justify-between p-4 pb-2">

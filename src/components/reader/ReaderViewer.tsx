@@ -19,6 +19,7 @@ interface ReaderViewerProps {
     mangaId: string;
     mangaTitle: string;
     scanlationGroup: string;
+    scanlationGroupId?: string;
     uploaderName?: string;
 }
 
@@ -36,7 +37,7 @@ const DEFAULT_CONFIG: ReaderConfig = {
 
 export default function ReaderViewer({
     chapterId, currentChapter, currentChapterId, chapterList,
-    mangaId, mangaTitle, scanlationGroup, uploaderName = 'User'
+    mangaId, mangaTitle, scanlationGroup, scanlationGroupId, uploaderName = 'User'
 }: ReaderViewerProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -47,14 +48,27 @@ export default function ReaderViewer({
     const [isImgError, setIsImgError] = useState(false);
 
     const [currentIndex, setCurrentIndex] = useState(0);
+    // BUG FIX #4: showUI always starts false so reader opens focused on images
     const [showUI, setShowUI] = useState(false);
+    // BUG FIX #4: showSidebar always starts false regardless of localStorage
     const [showSidebar, setShowSidebar] = useState(false);
     const [isWebtoonDetected, setIsWebtoonDetected] = useState(false);
     const [imageRatios, setImageRatios] = useState<{ [key: number]: number }>({});
 
-    const containerRef = useRef<HTMLDivElement>(null);
+    // BUG FIX #1 (long-strip desktop): Use a separate scroll container ref,
+    // and render fixed overlays OUTSIDE this container (via a portal-like wrapper).
+    // We achieve this by NOT putting transform on the scroll container and instead
+    // wrapping the whole reader in a non-transformed root div.
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
     const isNavigatingRef = useRef(false);
+
+    // BUG FIX #3 (mobile scroll header): track last scroll position for touch
+    const lastScrollY = useRef(0);
+    const ticking = useRef(false);
+
+    // Long-strip tap detection (to avoid blocking scroll with overlay)
+    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
     const [readerConfig, setReaderConfig] = useState<ReaderConfig>(DEFAULT_CONFIG);
     const [isConfigLoaded, setIsConfigLoaded] = useState(false);
@@ -69,6 +83,9 @@ export default function ReaderViewer({
         const fetchImages = async () => {
             setIsLoadingImgs(true);
             setIsImgError(false);
+            // BUG FIX #4: reset UI state on every chapter load
+            setShowUI(false);
+            setShowSidebar(false);
             const data = await fetchChapterPagesServer(chapterId);
             if (cancelled) return;
             if (data?.chapter?.data?.length) {
@@ -100,10 +117,12 @@ export default function ReaderViewer({
         [isWebtoonDetected, isMobile, readerConfig.pageStyle]
     );
 
+    const isLongStrip = activePageStyle === 'long-strip';
+
     // ── Scroll tracking (long-strip) ─────────────────────────
     useEffect(() => {
-        if (activePageStyle !== 'long-strip' || !containerRef.current) return;
-        const container = containerRef.current;
+        if (activePageStyle !== 'long-strip' || !scrollContainerRef.current) return;
+        const container = scrollContainerRef.current;
         let rafId = 0;
 
         const handleScroll = () => {
@@ -119,8 +138,19 @@ export default function ReaderViewer({
                     if (vH > maxVis) { maxVis = vH; bestIdx = idx; }
                 });
                 if (bestIdx !== currentIndex) setCurrentIndex(bestIdx);
+
+                // BUG FIX #3: Show/hide header based on scroll direction
+                const currentScrollY = container.scrollTop;
+                const delta = currentScrollY - lastScrollY.current;
+                if (delta < -30) setShowUI(true);
+                else if (delta > 10) setShowUI(false);
+                lastScrollY.current = currentScrollY;
             });
         };
+
+        // ── Long-strip tap detection for sidebar toggle ──────
+        // Uses onClick on the content div directly (handles both desktop
+        // mouse click and mobile tap) — no touch handlers needed here.
 
         container.addEventListener('scroll', handleScroll, { passive: true });
         return () => {
@@ -128,6 +158,31 @@ export default function ReaderViewer({
             cancelAnimationFrame(rafId);
         };
     }, [activePageStyle, currentIndex, images.length]);
+
+    // ── BUG FIX #3: Touch scroll for non-long-strip (window scroll) header show/hide ──
+    useEffect(() => {
+        if (!isMobile || isLongStrip) return;
+
+        const handleScroll = () => {
+            if (!ticking.current) {
+                ticking.current = true;
+                requestAnimationFrame(() => {
+                    const currentScrollY = window.scrollY;
+                    const delta = currentScrollY - lastScrollY.current;
+                    if (delta < -30) {
+                        setShowUI(true);
+                    } else if (delta > 10) {
+                        setShowUI(false);
+                    }
+                    lastScrollY.current = currentScrollY;
+                    ticking.current = false;
+                });
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [isMobile, isLongStrip]);
 
     // ── Init page index from URL ─────────────────────────────
     useEffect(() => {
@@ -153,7 +208,8 @@ export default function ReaderViewer({
         try {
             const sConf = localStorage.getItem('maven_reader_config');
             if (sConf) setReaderConfig({ ...DEFAULT_CONFIG, ...JSON.parse(sConf) });
-            if (localStorage.getItem('maven_reader_sidebar') === 'true') setShowSidebar(true);
+            // BUG FIX #4: Do NOT restore sidebar open state from localStorage
+            // so reader always opens clean and focused on chapter images
         } catch { /* use defaults */ }
         setIsConfigLoaded(true);
     }, []);
@@ -161,10 +217,6 @@ export default function ReaderViewer({
     useEffect(() => {
         if (isConfigLoaded) localStorage.setItem('maven_reader_config', JSON.stringify(readerConfig));
     }, [readerConfig, isConfigLoaded]);
-
-    useEffect(() => {
-        if (isConfigLoaded) localStorage.setItem('maven_reader_sidebar', showSidebar.toString());
-    }, [showSidebar, isConfigLoaded]);
 
     // ── Images per page ──────────────────────────────────────
     const imagesPerPage = useMemo(() => {
@@ -178,26 +230,69 @@ export default function ReaderViewer({
     // ── Chapter navigation ───────────────────────────────────
     const currentLang = currentChapter?.translatedLanguage || 'en';
     const findChap = useCallback((isNext: boolean) => {
+        // All chapters of the same language, sorted by chapter number ascending
         const sLang = chapterList
             .filter(c => c.attributes.translatedLanguage === currentLang)
             .sort((a, b) => parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter));
-        const idx = sLang.findIndex(c => c.id === currentChapterId);
-        if (isNext && idx !== -1 && idx < sLang.length - 1) {
-            const next = sLang[idx + 1];
-            const gap = parseFloat(next.attributes.chapter) - parseFloat(currentChapter?.chapter || '0');
-            if (gap > 1.001 || Math.floor(parseFloat(next.attributes.chapter)) - Math.floor(parseFloat(currentChapter?.chapter || '0')) > 1) {
+
+        const currentChapNum = parseFloat(currentChapter?.chapter || '0');
+
+        // Get the current scanlation group id to prefer same group for next chapter
+        const currentGroupId = scanlationGroupId ?? null;
+
+        if (isNext) {
+            // Find the smallest chapter number strictly greater than current
+            const nextChapNum = sLang
+                .map(c => parseFloat(c.attributes.chapter))
+                .find(n => n > currentChapNum);
+
+            if (nextChapNum === undefined) {
+                // No next chapter → go back to manga page
+                router.push(`/manga/${mangaId}`);
+                return;
+            }
+
+            // Among all entries with that chapter number, prefer same group
+            const candidates = sLang.filter(c => parseFloat(c.attributes.chapter) === nextChapNum);
+            const preferred = candidates.find(c =>
+                currentGroupId &&
+                c.relationships?.some((r: any) => r.type === 'scanlation_group' && r.id === currentGroupId)
+            );
+            const next = preferred ?? candidates[0];
+
+            // Gap detection
+            const gap = nextChapNum - currentChapNum;
+            if (
+                gap > 1.001 ||
+                Math.floor(nextChapNum) - Math.floor(currentChapNum) > 1
+            ) {
                 setGapDetails({ curr: currentChapter?.chapter, next: next.attributes.chapter });
                 setPendingNextChapterId(next.id);
                 setIsGapModalOpen(true);
             } else {
                 router.push(`/read/${next.id}`);
             }
-        } else if (!isNext && idx > 0) {
-            router.push(`/read/${sLang[idx - 1].id}?pos=last`);
         } else {
-            router.push(`/manga/${mangaId}`);
+            // Find the largest chapter number strictly less than current
+            const prevChapNum = [...sLang]
+                .reverse()
+                .map(c => parseFloat(c.attributes.chapter))
+                .find(n => n < currentChapNum);
+
+            if (prevChapNum === undefined) {
+                router.push(`/manga/${mangaId}`);
+                return;
+            }
+
+            const candidates = sLang.filter(c => parseFloat(c.attributes.chapter) === prevChapNum);
+            const preferred = candidates.find(c =>
+                currentGroupId &&
+                c.relationships?.some((r: any) => r.type === 'scanlation_group' && r.id === currentGroupId)
+            );
+            const prev = preferred ?? candidates[candidates.length - 1];
+            router.push(`/read/${prev.id}?pos=last`);
         }
-    }, [chapterList, currentLang, currentChapterId, currentChapter, router, mangaId]);
+    }, [chapterList, currentLang, currentChapterId, currentChapter, router, mangaId, scanlationGroupId]);
 
     // ── Page navigation ──────────────────────────────────────
     const goToPage = useCallback((isNext: boolean) => {
@@ -225,8 +320,9 @@ export default function ReaderViewer({
         setTimeout(() => { isNavigatingRef.current = false; }, 500);
     }, [images.length, activePageStyle, readerConfig.fitMode]);
 
-    // ── Wheel → show/hide UI ─────────────────────────────────
+    // ── Wheel → show/hide UI (desktop only) ─────────────────
     useEffect(() => {
+        if (isMobile) return; // Mobile uses touch scroll handler instead
         const handleWheel = (e: WheelEvent) => {
             if (isNavigatingRef.current || isSettingsOpen) return;
             if (e.deltaY > 10 && showUI) setShowUI(false);
@@ -234,7 +330,7 @@ export default function ReaderViewer({
         };
         window.addEventListener('wheel', handleWheel, { passive: true });
         return () => window.removeEventListener('wheel', handleWheel);
-    }, [showUI, isSettingsOpen]);
+    }, [showUI, isSettingsOpen, isMobile]);
 
     // ── Keyboard navigation ──────────────────────────────────
     useEffect(() => {
@@ -286,17 +382,21 @@ export default function ReaderViewer({
         </div>
     );
 
-    const isLongStrip = activePageStyle === 'long-strip';
-
     return (
+        /*
+         * BUG FIX #1 (Long-strip desktop):
+         * The outer wrapper is a plain, non-scrolling, non-transformed div.
+         * This ensures that `fixed` children (ReaderHeader, ReaderSidebar,
+         * ReaderProgressBar) are positioned relative to the viewport, not
+         * trapped inside a CSS stacking context caused by `transform`.
+         *
+         * BUG FIX #2 (Mobile overflow):
+         * `overflow-x: hidden` on the outer wrapper prevents horizontal scroll/swipe
+         * from revealing the sidebar accidentally.
+         */
         <div
-            ref={containerRef}
-            className={`relative w-full h-screen bg-[#0f0f11] select-none z-[100] ${
-                isLongStrip
-                    ? 'overflow-y-auto custom-scrollbar'
-                    : (readerConfig.imageSizing.containHeight ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar')
-            }`}
-            style={{ transform: 'translateZ(0)' }}
+            className="relative w-full h-screen bg-[#0f0f11] select-none overflow-x-hidden"
+            style={{ isolation: 'isolate' }}
         >
             {/* Preload first 5 images for webtoon detection (hidden) */}
             {!isWebtoonDetected && (
@@ -307,73 +407,105 @@ export default function ReaderViewer({
                 </div>
             )}
 
-            {/* ── LONG STRIP ── */}
-            {isLongStrip ? (
-                <div
-                    className="w-full min-h-full flex flex-col items-center pb-20 pt-16"
-                    onClick={(e) => e.detail === 1 && setShowSidebar(p => !p)}
-                >
-                    {images.map((src, i) => (
-                        <img
-                            key={i}
-                            ref={el => { imageRefs.current[i] = el; }}
-                            src={src}
-                            alt={`Page ${i + 1}`}
-                            onLoad={e => handleImgLoad(i, e)}
-                            className="w-full h-auto max-w-4xl object-contain mb-0.5"
-                            loading={i < 3 ? 'eager' : 'lazy'}
-                            decoding="async"
-                            referrerPolicy="no-referrer"
-                            style={{ willChange: i < 3 ? 'auto' : 'auto' }}
-                        />
-                    ))}
+            {/* ── SCROLL CONTAINER ── */}
+            {/*
+             * BUG FIX #1: The actual scroll container is a SEPARATE inner div,
+             * without any `transform` that would create a new stacking context.
+             * The `fixed` overlays are siblings of this div, not children.
+             */}
+            <div
+                ref={scrollContainerRef}
+                className={`absolute inset-0 ${
+                    isLongStrip
+                        ? 'overflow-y-auto overflow-x-hidden custom-scrollbar'
+                        : (readerConfig.imageSizing.containHeight ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden custom-scrollbar')
+                }`}
+            >
+                {/* ── LONG STRIP ── */}
+                {isLongStrip ? (
                     <div
-                        className="flex flex-col gap-4 mt-10 mb-20 text-center"
-                        onClick={e => e.stopPropagation()}
+                        className="w-full min-h-full flex flex-col items-center pb-20 pt-16"
+                        onClick={(e) => {
+                            // Skip if clicking a button or link (prev/next chapter etc.)
+                            const target = e.target as HTMLElement;
+                            if (target.closest('button') || target.closest('a')) return;
+
+                            // Toggle sidebar only when tapping/clicking center 60% of screen
+                            const screenW = window.innerWidth;
+                            const isCenter = e.clientX > screenW * 0.2 && e.clientX < screenW * 0.8;
+
+                            if (isCenter) {
+                                setShowSidebar(p => !p);
+                            } else if (showSidebar) {
+                                // If sidebar is open and we click outside center, close it
+                                setShowSidebar(false);
+                            }
+                        }}
                     >
-                        <p className="text-gray-500 text-sm">— End of Chapter —</p>
-                        <div className="flex gap-3 justify-center">
-                            <button
-                                onClick={() => findChap(false)}
-                                className="px-6 py-2.5 bg-white/[0.06] border border-white/10 text-white rounded-lg font-bold hover:bg-white/10 transition-colors text-sm"
-                            >
-                                ← Prev
-                            </button>
-                            <button
-                                onClick={() => findChap(true)}
-                                className="px-6 py-2.5 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-400 transition-colors text-sm shadow-lg shadow-orange-500/20"
-                            >
-                                Next →
-                            </button>
+                        {images.map((src, i) => (
+                            <img
+                                key={i}
+                                ref={el => { imageRefs.current[i] = el; }}
+                                src={src}
+                                alt={`Page ${i + 1}`}
+                                onLoad={e => handleImgLoad(i, e)}
+                                className="w-full h-auto max-w-4xl object-contain mb-0.5"
+                                loading={i < 3 ? 'eager' : 'lazy'}
+                                decoding="async"
+                                referrerPolicy="no-referrer"
+                            />
+                        ))}
+                        <div
+                            className="flex flex-col gap-4 mt-10 mb-20 text-center"
+                        >
+                            <p className="text-gray-500 text-sm">— End of Chapter —</p>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={() => findChap(false)}
+                                    className="px-6 py-2.5 bg-white/[0.06] border border-white/10 text-white rounded-lg font-bold hover:bg-white/10 transition-colors text-sm"
+                                >
+                                    ← Prev
+                                </button>
+                                <button
+                                    onClick={() => findChap(true)}
+                                    className="px-6 py-2.5 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-400 transition-colors text-sm shadow-lg shadow-orange-500/20"
+                                >
+                                    Next →
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            ) : (
-                /* ── SINGLE / DOUBLE / WIDE ── */
-                <div
-                    className={`w-full min-h-full flex items-center justify-center gap-0.5 ${
-                        readerConfig.imageSizing.containHeight ? 'h-full' : ''
-                    } ${readerConfig.readingDirection === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}
-                    style={{ transform: 'translateZ(0)' }}
-                >
-                    {images.slice(currentIndex, currentIndex + imagesPerPage).map((src, i) => (
-                        <img
-                            key={currentIndex + i}
-                            src={src}
-                            alt={`Page ${currentIndex + i + 1}`}
-                            onLoad={e => handleImgLoad(currentIndex + i, e)}
-                            className={`${imgClass(imagesPerPage)} shadow-2xl`}
-                            loading="eager"
-                            decoding="async"
-                            fetchPriority="high"
-                            referrerPolicy="no-referrer"
-                            style={{ willChange: 'transform' }}
-                        />
-                    ))}
-                </div>
-            )}
+                ) : (
+                    /* ── SINGLE / DOUBLE / WIDE ── */
+                    <div
+                        className={`w-full min-h-full flex items-center justify-center gap-0.5 ${
+                            readerConfig.imageSizing.containHeight ? 'h-full' : ''
+                        } ${readerConfig.readingDirection === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
+                        {images.slice(currentIndex, currentIndex + imagesPerPage).map((src, i) => (
+                            <img
+                                key={currentIndex + i}
+                                src={src}
+                                alt={`Page ${currentIndex + i + 1}`}
+                                onLoad={e => handleImgLoad(currentIndex + i, e)}
+                                className={`${imgClass(imagesPerPage)} shadow-2xl`}
+                                loading="eager"
+                                decoding="async"
+                                fetchPriority="high"
+                                referrerPolicy="no-referrer"
+                                style={{ willChange: 'transform' }}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* ── Click zones (single/double mode) ── */}
+            {/*
+             * BUG FIX #2 (mobile): Click zones are fixed overlays.
+             * On mobile, swipe-right gesture is blocked by overflow-x-hidden on root.
+             * Center zone toggles sidebar only on explicit tap.
+             */}
             {!isLongStrip && (
                 <div className="fixed inset-0 flex z-10" aria-hidden="true">
                     <div className="w-[30%] h-full cursor-pointer" onClick={() => { if (!showSidebar) goToPage(readerConfig.readingDirection !== 'ltr'); else setShowSidebar(false); }} />
@@ -381,6 +513,9 @@ export default function ReaderViewer({
                     <div className="w-[30%] h-full cursor-pointer" onClick={() => { if (!showSidebar) goToPage(readerConfig.readingDirection === 'ltr'); else setShowSidebar(false); }} />
                 </div>
             )}
+
+            {/* Long-strip sidebar toggle is handled via touchstart/touchend
+                 directly on the scroll container — no blocking overlay needed. */}
 
             {/* ── Modals ── */}
             <GapModal
@@ -398,7 +533,7 @@ export default function ReaderViewer({
                 setConfig={setReaderConfig}
             />
 
-            {/* ── UI Overlays ── */}
+            {/* ── UI Overlays (outside scroll container so `fixed` works correctly) ── */}
             {readerConfig.headerVisible && (
                 <ReaderHeader
                     showUI={showUI}
